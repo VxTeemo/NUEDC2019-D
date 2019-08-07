@@ -50,7 +50,7 @@ void OS_Init()
 
     /*    各模块初始化      */
 	
-//	  ADS1256_Init();     //24位AD初始化
+	ADS1256_Init();     //24位AD初始化
 
     GridData_Init();   // 画图表格初始化
 	Relay_Init();

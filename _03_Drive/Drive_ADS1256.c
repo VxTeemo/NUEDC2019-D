@@ -20,7 +20,7 @@
 #define DOUT			 GPIO_Pin_2
 #define DRDY			 GPIO_Pin_6
 #define CS				 GPIO_Pin_8
-#define PDWN		     GPIO_Pin_10
+#define PDWN		   GPIO_Pin_10
 
 #define ADS1256_CS_0()   		GPIO_ResetBits(GPIOG,CS)
 #define ADS1256_CS_1()   		GPIO_SetBits(GPIOG,CS)
@@ -31,9 +31,9 @@
 #define ADS1256_DIN_0()   	GPIO_ResetBits(GPIOG,DOUT) //注意这里，单片机的DOUT连接ADS1256的DIN
 #define ADS1256_DIN_1()   	GPIO_SetBits(GPIOG,DOUT)
 
-#define ADS1256_DOUT			 (GPIOG->IDR & DIN)
+#define ADS1256_DOUT			 (GPIOG->IDR & DIN)          //
 #define ADS1256_DRDY			 (GPIOG->IDR & DRDY)
-#define ADS1256_PDWN		     (GPIOG->IDR & PDWN)
+#define ADS1256_PDWN		   (GPIOG->IDR & PDWN)
 
 
 
@@ -262,7 +262,7 @@ u32 ADS1256ReadData(u8 channel)
 
     ADS1256_CS_1();
 
-    while(ADS1256_DRDY);
+    //while(ADS1256_DRDY);
 
     return sum;
 }
