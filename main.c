@@ -41,33 +41,21 @@ void OS_Init()
 {
 
     System_init();
-
     LED_Init();
-
     GPIO_Key_Init();
-
 
     /*     LCD屏幕初始化    */
     OS_LCD_Init();	//LCD
-
     Touch_Init(); 	//触屏
 
-
     /*    各模块初始化      */
-
-//    ADF4351Init();			//PLL初始化
-
-//    ADC1_Init();			  //内置AD初始化
-
-//    Dac2_Init(); 				//内置DA初始化
-
+	
 //	  ADS1256_Init();     //24位AD初始化
 
     GridData_Init();   // 画图表格初始化
 	Relay_Init();
     uart_init(115200); //串口初始化
-
-
+	
 
 }
 

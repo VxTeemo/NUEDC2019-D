@@ -98,16 +98,21 @@ void GridData_Init(void)
 * @retval none
 */
 int log_table_length = 101;// sizeof(log_table);
+float AvData[101]= {0}; 
 void AD9851_Sweep(void)
 {
-	static int count = 0;
-
-	count++;
-	if(count == log_table_length)
-		count = 0;
+	u32 i;
 	
-	dds.fre = log_table[count];
-	sendData(dds);
+    for(i=0; i<101; i++)
+    {
+        dds.fre= log_table[i];
+        sendData(dds);
+		delay_ms(1);
+		AvData[i] = Moving_Average_Filter(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM, 10);
+    }
+	
+
+	
 }
 
 
@@ -118,10 +123,10 @@ void AD9851_Sweep(void)
  */
 __inline void DDSDataInit(void)
 {
-    /*	输出幅度 2v	*/
-    dds.range=0.005;
+    /*	输出幅度 15mv	*/
+    dds.range=0.015;
 
-    /*	输出频率	100000Hz	*/
+    /*	输出频率	100Hz	*/
     dds.fre=100;
 
     /*	扫频步进	1000Hz	*/
@@ -139,17 +144,33 @@ __inline void DDSDataInit(void)
     /*	默认为普通输出模式		*/
     dds.mode=NORMAL;
 
-    /*	默认不打开输出		*/
+    /*	默认打开输出		*/
     dds.output=1;
 
 }
 
 void task_1_3(void)
 {
+	u32 R_Input, R_Output, Gain;
+
+	//1k
 	dds.fre=1000;
 	sendData(dds);
+	//直接测量一次
+	delay_ms(1);
+	Gain = Moving_Average_Filter(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM, 10);
 	
+	//输入端串电阻
+	Relay_Control(0,1);
+	Relay_Control(1,0);
+	delay_ms(1);
+	R_Input = Moving_Average_Filter(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM, 10);
 	
+	//输出端串电阻
+	Relay_Control(0,0);
+	Relay_Control(1,1);
+	delay_ms(1);
+	R_Output = Moving_Average_Filter(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM, 10);
 	
 	
 }

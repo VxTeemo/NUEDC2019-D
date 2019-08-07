@@ -5,6 +5,7 @@
 
 
 void Relay_Init(void);
+void Relay_Control(u8 Relay_Num, u8 Relay_State);
 
 
 #endif
