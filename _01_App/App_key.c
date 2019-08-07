@@ -66,7 +66,7 @@ void Key_main(void)
 			}		
 			else {Key.ResultShort = 0; Key.ResultLong = 0;}
 			
-			OSTimeDly(97);
+			OSTimeDly(400);
 		}
 }
 						
@@ -176,4 +176,29 @@ void Key_Clear(u8 Mode)
 	if(Mode & KEY_MODE_LONG)  Key.ResultLong = 0;
 }
 
-
+u8 KEY_Scan(u8 mode)
+{
+		static u8 key_up=1;//按键按松开标志
+	
+		if(mode)
+			key_up=1;  //支持连按		  
+		
+		if(key_up&&(GPIO_KEY1==0||GPIO_KEY2==0||GPIO_KEY3==0||GPIO_WK_UP==0))
+		{
+				Delay_ms(10);//去抖动 
+				key_up=0;
+			
+				if(GPIO_KEY1==0)
+					return 1;
+				else if(GPIO_KEY2==0)
+					return 2;
+				else if(GPIO_KEY3==0)
+					return 3;
+				else if(GPIO_WK_UP==0)
+					return 4;
+		}
+		else if(GPIO_KEY1==1 && GPIO_KEY2==1 && GPIO_KEY3==1 && GPIO_WK_UP==1)
+			key_up=1; 	
+		
+		return 0;// 无按键按下
+}

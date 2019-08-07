@@ -393,29 +393,19 @@
               <FilePath>.\_01_App\App_LED.c</FilePath>
             </File>
             <File>
-              <FileName>App_ADF4351.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\_01_App\App_ADF4351.c</FilePath>
-            </File>
-            <File>
               <FileName>App_key.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\_01_App\App_key.c</FilePath>
             </File>
             <File>
-              <FileName>App_ADF4351_Sweep.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\_01_App\App_ADF4351_Sweep.c</FilePath>
-            </File>
-            <File>
-              <FileName>App_Switch.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\_01_App\App_Switch.c</FilePath>
-            </File>
-            <File>
               <FileName>App_FreqAna.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\_01_App\App_FreqAna.c</FilePath>
+            </File>
+            <File>
+              <FileName>App_NIT.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\_01_App\App_NIT.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -516,21 +506,6 @@
               <FileName>Drive_TouchKey.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\_03_Drive\Drive_TouchKey.c</FilePath>
-            </File>
-            <File>
-              <FileName>Drive_ADF4351.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\_03_Drive\Drive_ADF4351.c</FilePath>
-            </File>
-            <File>
-              <FileName>Drive_ADL5336.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\_03_Drive\Drive_ADL5336.c</FilePath>
-            </File>
-            <File>
-              <FileName>Drive_PID.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\_03_Drive\Drive_PID.c</FilePath>
             </File>
             <File>
               <FileName>Drive_ADS1256.c</FileName>

@@ -43,6 +43,7 @@ extern Type_Key Key;
 u8 Key_Now_Get(u8 KeyNum,u8 Mode);
 u8 Key_Get(u8 KeyNum,u8 Mode);
 void Key_Clear(u8 Mode);
- void Key_main(void);
+void Key_main(void);
+u8 KEY_Scan(u8 mode);
 #endif
 

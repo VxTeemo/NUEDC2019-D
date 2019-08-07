@@ -43,17 +43,17 @@
 
 //#include "TEST.h"
 
-#include "App_Frequency.h"
-#include "App_OSC.h"
+//#include "App_Frequency.h"
+//#include "App_OSC.h"
 #include "App_Touch.h"
-#include "App_AFG.h"
+//#include "App_AFG.h"
 #include "App_LED.h"
 #include "App_key.h"
 #include "App_Switch.h"
-#include "App_Wave.h"
-#include "App_RFA.h"
-#include "App_ADF4351.h"
-#include "App_ADF4351_Sweep.h"
+//#include "App_Wave.h"
+//#include "App_RFA.h"
+//#include "App_ADF4351.h"
+//#include "App_ADF4351_Sweep.h"
 #include "App_FreqAna.h"
 //#include "App_ADF4001.h"
 //#include "App_Wave.h"
@@ -61,6 +61,8 @@
 //#include "App_ADF4360.h"
 //#include "App_CAN.h"
 //#include "App_analysis.h"
+
+#include "App_NIT.h"
 
 /*Çý¶¯ÎÄ¼þ*/
 
@@ -82,22 +84,23 @@
 #include "Drive_Timer.h"
 #include "Drive_Exti.h" 
 #include "Drive_IIC.h"
-#include "Drive_FFT.h"
-#include "Drive_PID.h"
-#include "Drive_TMP275.h"
+//#include "Drive_FFT.h"
+//#include "Drive_PID.h"
+//#include "Drive_TMP275.h"
 //#include "Drive_PGA2310.h"
 //#include "Drive_ds18b20.h"
-#include "Drive_ADF4001.h"
+//#include "Drive_ADF4001.h"
 //#include "Drive_CDCE937.h"
-#include "Drive_ADF4360.h"
-#include "Drive_CAN.h"
-#include "Drive_ADPCM.h"
-#include "Drive_ADF4351.h"
+//#include "Drive_ADF4360.h"
+//#include "Drive_CAN.h"
+//#include "Drive_ADPCM.h"
+//#include "Drive_ADF4351.h"
 #include "Drive_TouchKey.h"
-#include "Drive_HMC542.h"
-#include "Drive_ADL5336.h"
+//#include "Drive_HMC542.h"
+//#include "Drive_ADL5336.h"
 #include "Drive_ADS1256.h"
 #include "Drive_Communication.h"
+
 #endif
 
 

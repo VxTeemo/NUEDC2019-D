@@ -22,8 +22,8 @@
 unsigned int TASK_0_STK[64];
 unsigned int TASK_1_STK[128];
 unsigned int TASK_2_STK[128];
-unsigned int TASK_3_STK[256];
-unsigned int TASK_4_STK[4096];
+unsigned int TASK_3_STK[4096];
+//unsigned int TASK_4_STK[4096];
 
 unsigned int TASK_5_STK[256];
 unsigned int TASK_6_STK[16000];
@@ -65,7 +65,7 @@ void OS_Init()
 
     GridData_Init();   // 画图表格初始化
 
-//    uart_init(460800); //串口初始化
+    uart_init(115200); //串口初始化
 
 
 
@@ -81,6 +81,7 @@ int main()
     Task_Create(Touch_main,&TASK_1_STK[128-1],1);
 
     Task_Create(Key_main,&TASK_2_STK[128-1],2);
+    //Task_Create(NIT_main,&TASK_3_STK[4096-1],3);
 
     //Task_Create(Switch_main,&TASK_5_STK[256-1],3);
 

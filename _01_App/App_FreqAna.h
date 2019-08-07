@@ -6,4 +6,6 @@
 
 void FreqAna_main(void);
 void GridData_Init(void);
+void AD9851_Sweep(void);
+
 #endif
