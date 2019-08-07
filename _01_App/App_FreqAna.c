@@ -11,28 +11,47 @@
 #include "App_FreqAna.h"
 #include "log_table.inc"
 
-#define MEASURE_LENGTH	200 			 //单片机显示测量点数
-
-#define Get_Length      4650     	 //总测量地点数 ((35M-500M)/0.1MHZ) 
-
-#define R_Real    5000.0f        //固定电阻大小
-
+//#define MEASURE_LENGTH	200 	//单片机显示测量点数
+//#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进) 
+#define R_Real    5000.0f       //固定电阻大小
 #define ADS9851_V   0.01f       //9851输出幅度
 
-GRAPH_Struct 	GridData;							//网格结构体定义
+GRAPH_Struct 	GridData;		//网格结构体定义
 
-float SignalData[Get_Length]= {0};   //采集的数据
+const int log_table_length = sizeof(log_table)/sizeof(float);//101
+float SignalData[log_table_length]= {0};   //采集的原始数据
+float AvData[log_table_length]= {0};			//转换成对数
 
 float VMax_Fre,Rin,Rout,All_Gain;
 
 void DDSDataInit(void);
-
 void task_1_3(void);
-
 Fault_Type Fault_Detect(void);
 float ADS1256_Measure(float fre, float range, u32 delay);
 
-u8 flag_relay = 0;
+#define UNKOWN_VAL0 1.2f
+#define UNKOWN_VAL1 1.3f
+
+float AD_ACNormal    = 1.13f;	//正常交流
+float AD_AC50k_C1C2D = 1.004f;	//50k 100mv C1C2翻倍的情况
+float AD_AC50k_C3O   = 1.096f;	//50k 100mv C3开路的情况
+float AD_AC50k_C3D   = 0.0f;    	//50k 100mv C3翻倍的情况
+float AD_AC15_C1D    = UNKOWN_VAL0;			//15hz 1V C1翻倍的情况 目前还没有值
+float AD_AC15_C2D    = UNKOWN_VAL1;			//15hz 1V C2翻倍的情况 目前还没有值
+float AD_AC_C2O      = 0.053f;				// C2开路的情况
+float AD_AC_C1O_R    = 0.0f;    				//剩下的情况 C1开路 电阻故障 1k0.1v交流为0
+float AD_DC_C1O      = 7.6f/4.0f;  			//C1开路或检测错误的情况
+float AD_AC_C1O      = 0.03536f; 		//C1开路的情况
+float AD_DC_R_FULL   = 11.98f/4.0f;    	//电阻故障中直流最大的情况 包括R1开 R2短 R3短 R4开
+float AD_RS_R1O      = 0.084f;    		//R1开
+float AD_RS_R4O      = 0.074f;    		//R4开
+float AD_RS_R3S      = 0.030f;    		//R3短
+float AD_RS_R2S      = 0.000f;    		//R2短
+float AD_DC_R1S   = 11.23f/4.0f;    	//R1短 RS应为0
+float AD_DC_R2O   = 4.19f/4.0f;    		//R2开 RS应为0
+float AD_DC_R3O   = 0.221f/4.0f;    	//R3开 RS应为5mv
+float AD_DC_R4S   = 0.135f/4.0f;    	//R4短 RS应为0
+
 
 void FreqAna_main()
 {
@@ -106,8 +125,8 @@ void GridData_Init(void)
     GridData.ynumber=11;
 
     /*	设置数据长度和保存两个Y轴数据的指针		*/
-    GridData.Buff_Lenth=MEASURE_LENGTH;
-    GridData.left_buff=SignalData;
+    GridData.Buff_Lenth = log_table_length;
+    GridData.left_buff = AvData;
 
     /*	横轴的数字范围		*/
     GridData.xmax=1000000;
@@ -125,9 +144,6 @@ void GridData_Init(void)
 * @param
 * @retval none
 */
-int log_table_length = 101;// sizeof(log_table);
-float AvData[101]= {0};
-
 void AD9851_Sweep(void)
 {
     u32 i;
@@ -136,9 +152,11 @@ void AD9851_Sweep(void)
     for(i=0; i<101; i++)
     {
         dds.fre= log_table[i];
+		dds.range = ADS9851_V;
         sendData(dds);
         delay_ms(1);
-        AvData[i] = ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM);
+        SignalData[i] = ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM);
+		AvData[i] = 20 * log10(SignalData[i] / ADS9851_V);
     }
     LED1 = 1;
 }
@@ -156,29 +174,6 @@ __inline float ADS1256_Measure(float fre, float range, u32 delay)
     return Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM));
 }
 
-#define UNKOWN_VAL0 1.2f
-#define UNKOWN_VAL1 1.3f
-
-float AD_ACNormal    = 1.13f;	//正常交流
-float AD_AC50k_C1C2D = 1.004f;	//50k 100mv C1C2翻倍的情况
-float AD_AC50k_C3O   = 1.096f;	//50k 100mv C3开路的情况
-float AD_AC50k_C3D   = 0.0f;    	//50k 100mv C3翻倍的情况
-float AD_AC15_C1D    = UNKOWN_VAL0;			//15hz 1V C1翻倍的情况 目前还没有值
-float AD_AC15_C2D    = UNKOWN_VAL1;			//15hz 1V C2翻倍的情况 目前还没有值
-float AD_AC_C2O      = 0.053f;				// C2开路的情况
-float AD_AC_C1O_R    = 0.0f;    				//剩下的情况 C1开路 电阻故障 1k0.1v交流为0
-float AD_DC_C1O      = 7.6f/4.0f;  			//C1开路或检测错误的情况
-float AD_AC_C1O      = 0.03536f; 		//C1开路的情况
-float AD_DC_R_FULL   = 11.98f/4.0f;    	//电阻故障中直流最大的情况 包括R1开 R2短 R3短 R4开
-float AD_RS_R1O      = 0.084f;    		//R1开
-float AD_RS_R4O      = 0.074f;    		//R4开
-float AD_RS_R3S      = 0.030f;    		//R3短
-float AD_RS_R2S      = 0.000f;    		//R2短
-
-float AD_DC_R1S   = 11.23f/4.0f;    	//R1短 RS应为0
-float AD_DC_R2O   = 4.19f/4.0f;    		//R2开 RS应为0
-float AD_DC_R3O   = 0.221f/4.0f;    	//R3开 RS应为5mv
-float AD_DC_R4S   = 0.135f/4.0f;    	//R4短 RS应为0
 
 Fault_Type Fault_Detect(void)
 {
@@ -334,7 +329,7 @@ void AD9851_Sweep_once(int control, u32 index)
     dds.fre= log_table[i];
     sendData(dds);
     delay_ms(1);
-    AvData[i] = ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM);
+    SignalData[i] = ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM);
 
 }
 

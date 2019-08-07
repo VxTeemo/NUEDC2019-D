@@ -15,7 +15,7 @@
 
 unsigned char Sched_flag = 1;//调度器标志位
 
-
+void OSGetHighRdy(void);
 /*
 *************************************************************************
 *
@@ -50,7 +50,7 @@ __inline void OSDelPrioRdy(unsigned char prio)
 *
 **************************************************************************
 */
-void OSGetHighRdy(void)				
+__inline void OSGetHighRdy(void)				
 {									
 	unsigned char	OS_NEXT_Prio;	
 	for(OS_NEXT_Prio=0;(OS_NEXT_Prio<OS_MAX_Task)&&(!(OSRdyTbl&(0x01<<OS_NEXT_Prio)));OS_NEXT_Prio++);
