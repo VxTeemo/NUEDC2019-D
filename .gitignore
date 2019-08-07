@@ -23,9 +23,7 @@ JLinkSettings.ini
 *.sct
 *.__i
 *.htm
-__Output File/
-_03_OS_*
+__Output/
+
 *- 副本.c
 *- 副本.h
-*\345\211\257\346\234\254.h
-*\345\211\257\346\234\254.c

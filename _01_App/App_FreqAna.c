@@ -50,13 +50,11 @@ void FreqAna_main()
             Draw_Graph(&GridData,LEFTY);
 
         }
-        if(Key_Now_Get(WK_UP,KEY_MODE_SHORT))
-        {
-
-            ESP8266_Client_Connect_Server(); //服务器连接
-
-
-        }
+		
+//        if(Key_Now_Get(WK_UP,KEY_MODE_SHORT))
+//        {
+//            ESP8266_Client_Connect_Server(); //服务器连接
+//        }
 
         OSTimeDly(111);
     }
@@ -97,7 +95,7 @@ void GridData_Init(void)
     GridData.xmin=100;
 
     /*	左边纵轴的数字范围		*/
-    GridData.left_ymax=0.3;
+    GridData.left_ymax=44;
     GridData.left_ymin=0;
 }
 

@@ -947,24 +947,24 @@ void Show_Label(GRAPH_Struct griddata,u8 yselect)
     float ycase=(float)(y2-y1)/(ynumber-1);//纵坐标大小格的长度
 
 
-    OS_String_Show(x2+40,y2+10,16,0,"Fre/MHz");//横坐标轴标签
+    OS_String_Show(x2-20,y2+25,16,0,"Fre/Hz");//横坐标轴标签
 
     step=(log10f(griddata.xmax)-log10f(griddata.xmin))/(xnumber-1);
 	
 
     for(i=0; i<xnumber; i++) //横坐标轴单位长度标签
-        OS_Num_Show(x1+i*xcase-7,y2+10,16,1, powf(10, ( log10f(griddata.xmin)+i*step )),"%.0f"); //griddata.xmin +
+        OS_Num_Show(x1+i*xcase-20,y2+10,16,1, powf(10, ( log10f(griddata.xmin)+i*step )),"%.0f"); //griddata.xmin +
 
     if(yselect & LEFTY)
     {
-        OS_String_Show(x1,y1-25,16,0,"Val/V");//左边纵坐标轴标签
+        OS_String_Show(x1,y1-25,16,0,"Gain/dB");//左边纵坐标轴标签
 
         OS_Line_Draw(x2+60,y1,x2+100,y1,griddata.left_ycolor);		//备注不同颜色曲线代表的含义
-        OS_String_Show(x2+110,y1-10,16,0,"Val--Fre");
+        OS_String_Show(x2-60,y1-25,16,0,"Gain--Fre");
 
         step=(griddata.left_ymax-griddata.left_ymin)/(ynumber-1);
         for(i=0; i<ynumber; i++) //左边纵坐标轴单位长度标签
-            OS_Num_Show(x1-35,y1+i*ycase-7,16,1,griddata.left_ymax-i*step,"%.1f");
+            OS_Num_Show(x1-40,y1+i*ycase-7,16,1,griddata.left_ymax-i*step,"%.1f");
     }
 
     if(yselect & RIGHTY)

@@ -55,17 +55,17 @@ void OS_Init()
 
     /*    各模块初始化      */
 
-    ADF4351Init();			//PLL初始化
+//    ADF4351Init();			//PLL初始化
 
-    ADC1_Init();			  //内置AD初始化
+//    ADC1_Init();			  //内置AD初始化
 
-    Dac2_Init(); 				//内置DA初始化
+//    Dac2_Init(); 				//内置DA初始化
 
 //	  ADS1256_Init();     //24位AD初始化
 
     GridData_Init();   // 画图表格初始化
 
-    uart_init(460800); //串口初始化
+//    uart_init(460800); //串口初始化
 
 
 
@@ -82,15 +82,15 @@ int main()
 
     Task_Create(Key_main,&TASK_2_STK[128-1],2);
 
-    Task_Create(Switch_main,&TASK_5_STK[256-1],3);
+    //Task_Create(Switch_main,&TASK_5_STK[256-1],3);
 
-    Task_Create(ADF4351_Sweep_main,&TASK_3_STK[256-1],4);
+    //Task_Create(ADF4351_Sweep_main,&TASK_3_STK[256-1],4);
 
-    Task_Create(ADF4351_main,&TASK_4_STK[4096-1],5);
+    //Task_Create(ADF4351_main,&TASK_4_STK[4096-1],5);
 
     Task_Create(FreqAna_main,&TASK_6_STK[16000-1],6);
 
-    OSTaskSuspend(6);    //挂起任务
+    //OSTaskSuspend(6);    //挂起任务
 
     OS_Init();
 
