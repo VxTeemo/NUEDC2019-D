@@ -66,7 +66,7 @@ void Key_main(void)
 			}		
 			else {Key.ResultShort = 0; Key.ResultLong = 0;}
 			
-			OSTimeDly(400);
+			OSTimeDly(100);
 		}
 }
 						

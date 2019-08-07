@@ -90,9 +90,9 @@ void TIM4_IRQHandler(void)
 		
 		#else 
 		
-		u16 AdData;
+//		u16 AdData;
 		
-		AdData =  ADC_Result_Get(2,5);
+//		AdData =  ADC_Result_Get(2,5);
 		
 	//	Code_Data(AdData);
 		

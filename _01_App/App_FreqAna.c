@@ -22,7 +22,7 @@ float SignalData[Get_Length]= {0};   //采集的数据
 float VMax_Fre;
 
 void DDSDataInit(void);
-
+u8 flag_relay = 0;
 void FreqAna_main()
 {
     GridData_Init();
@@ -43,9 +43,10 @@ void FreqAna_main()
             Draw_Graph(&GridData,LEFTY);
         }
 		
-		AD9851_Sweep();
 		
-
+		
+		//AD9851_Sweep();
+		
         OSTimeDly(111);
     }
 
@@ -142,4 +143,15 @@ __inline void DDSDataInit(void)
     dds.output=1;
 
 }
+
+void task_1_3(void)
+{
+	dds.fre=1000;
+	sendData(dds);
+	
+	
+	
+	
+}
+
 

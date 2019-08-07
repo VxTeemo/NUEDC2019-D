@@ -64,7 +64,7 @@ void OS_Init()
 //	  ADS1256_Init();     //24位AD初始化
 
     GridData_Init();   // 画图表格初始化
-
+	Relay_Init();
     uart_init(115200); //串口初始化
 
 
