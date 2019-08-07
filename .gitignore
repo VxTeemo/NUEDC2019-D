@@ -1,0 +1,31 @@
+!*.c
+!*.h
+!*.s
+!*.lib
+!*.axf
+*.uvguix*
+*.uvoptx
+*.dbgconf
+*.scvd
+JLinkLog.txt
+JLinkSettings.ini
+*.TMP
+*.log
+*.plg
+*.bak
+*.dep
+*.o
+*.d
+*.crf
+*.tra
+*.hex
+*.lnp
+*.sct
+*.__i
+*.htm
+__Output File/
+_03_OS_*
+*- 副本.c
+*- 副本.h
+*\345\211\257\346\234\254.h
+*\345\211\257\346\234\254.c
