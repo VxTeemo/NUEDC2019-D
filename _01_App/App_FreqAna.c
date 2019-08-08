@@ -206,7 +206,7 @@ void AD9851_Sweep(void)
         SignalData[i] = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM));
         AvData[i] = 20 * log10(SignalData[i] / (ADS9851_V / 5));
 		OS_Num_Show(250,390     ,16,1,SignalData[i],"***%0.3f   ");
-		OS_Num_Show(250,390+16  ,16,1,AvData[i],"***%0.3f   ");
+		OS_Num_Show(250,390+16  ,16,1,AvData[i],"###%0.3f   ");
 
 //        if(i % 33)  //一个循环3次
 //        {

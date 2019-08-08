@@ -34,14 +34,14 @@ void OS_Char_Show(u16 x, u16 y, u8 num, u8 size, u8 mode);
 int OS_LCD_Init(void)
 {
     TFT_LCD_Init();
-    LCD_Clear(WHITE);//清屏
+    LCD_Clear(BLACK);//清屏
     if(font_init())
     {
         OS_String_Show(400, 200, 32, 1, "Font Error!!!"); //检查字库
         return -1;
     }
-    TextColor = BLACK;
-    BackColor = WHITE;
+    TextColor = WHITE;
+    BackColor = BLACK;
 
     return 0;
 
@@ -1001,37 +1001,18 @@ void Draw_Graph(GRAPH_Struct *griddata,u8 yselect)
     float xstep=(float)wide/(length);//横轴的增量
     float xcase=(float)(x2-x1)/((griddata->xnumber-1)*5);//横坐标一小格的长度   每大格有5小格
     float ycase=(float)(y2-y1)/((griddata->ynumber-1)*5);//纵坐标一小格的长度
-    static u8 frist=1;
 
     //清除上次的波形
     if(yselect & LEFTY)
     {
-				tempx1=x1;
-				for(i=1;i<length;i++)
-				{
-						tempx2=x1+i*xstep;
-						OS_Line_Draw(tempx1,griddata->lastbuff[0][i-1],tempx2,griddata->lastbuff[0][i],griddata->Backcolor);
-				}
-        if(!frist)
-        {
-            for(i=0; i<length; i++)
-            {
-                tempx1=x1+i*xstep;
-                OS_Line_Draw(tempx1,y2,tempx1,griddata->lastbuff[0][i],griddata->Backcolor);
-            }
-        }
-
-        frist=0;
+        for(i=1; i<griddata->last_length; i++)
+            OS_Line_Draw(griddata->lastbuff[0][i-1].x,griddata->lastbuff[0][i-1].y,griddata->lastbuff[0][i].x,griddata->lastbuff[0][i].y,griddata->Backcolor);
     }
 
     if(yselect & RIGHTY)
     {
-        tempx1=x1;
-        for(i=1; i<length; i++)
-        {
-            tempx2=x1+i*xstep;
-            OS_Line_Draw(tempx1,griddata->lastbuff[1][i-1],tempx2,griddata->lastbuff[1][i],griddata->Backcolor);
-        }
+        for(i=1; i<griddata->last_length; i++)
+            OS_Line_Draw(griddata->lastbuff[1][i-1].x,griddata->lastbuff[1][i-1].y,griddata->lastbuff[1][i].x,griddata->lastbuff[1][i].y,griddata->Backcolor);
     }
 
     //重新画网格，补充网格
@@ -1050,42 +1031,51 @@ void Draw_Graph(GRAPH_Struct *griddata,u8 yselect)
         }
     }
 
-    //画波形
+	//画波形
     if(yselect & LEFTY)
     {
-				vpp=griddata->left_ymax-griddata->left_ymin;
+        vpp=griddata->left_ymax-griddata->left_ymin;
 
-			  tempx1=x1;
-			  tempy1=y2-(griddata->left_buff[0]-griddata->left_ymin)/vpp*high;
+        tempx1=x1;
+        tempy1=y2-(griddata->left_buff[0]-griddata->left_ymin)/vpp*high;
 
-			  griddata->lastbuff[0][0]=tempy1;//保存本次数据
+        if(tempx1 < x1)
+            tempx1 = x1;
+        else if(tempx1 > x2)
+            tempx1 = x2;
 
-			  for(i=1;i<length;i++)
-			  {
-					tempx2=x1+i*xstep;
+        if(tempy1 < y1)
+            tempy1 = y1;
+        else if(tempy1 > y2)
+            tempy1 = y2;
 
-					tempy2=y2-(griddata->left_buff[i]-griddata->left_ymin)/vpp*high;
+        griddata->lastbuff[0][0].x=tempx1;//保存本次数据
+        griddata->lastbuff[0][0].y=tempy1;
 
-					OS_Line_Draw(tempx1,tempy1,tempx2,tempy2,griddata->left_ycolor);
+        for(i=1; i<length; i++)
+        {
+            tempx2=x1+i*xstep;
 
-					griddata->lastbuff[0][i]=tempy2;//保存本次数据
+            tempy2=y2-(griddata->left_buff[i]-griddata->left_ymin)/vpp*high;
 
-					tempx1=tempx2;
-					tempy1=tempy2;
-				}
+            if(tempx2 < x1)
+                tempx2 = x1;
+            else if(tempx2 > x2)
+                tempx2 = x2;
 
-//        vpp=griddata->left_ymax-griddata->left_ymin;
+            if(tempy2 < y1)
+                tempy2 = y1;
+            else if(tempy2 > y2)
+                tempy2 = y2;
 
-//        for(i=0; i<length; i++)
-//        {
-//            tempx1=x1+i*xstep;
+            OS_Line_Draw(tempx1,tempy1,tempx2,tempy2,griddata->left_ycolor);
 
-//            tempy1=y2-(griddata->left_buff[i]-griddata->left_ymin)/vpp*high;
+            griddata->lastbuff[0][i].x=tempx2;//保存本次数据
+            griddata->lastbuff[0][i].y=tempy2;
 
-//            OS_Line_Draw(tempx1,y2,tempx1,tempy1,griddata->left_ycolor);
-
-//            griddata->lastbuff[0][i]=tempy1;//保存本次数据
-//        }
+            tempx1=tempx2;
+            tempy1=tempy2;
+        }
     }
 
     if(yselect & RIGHTY)
@@ -1095,7 +1085,18 @@ void Draw_Graph(GRAPH_Struct *griddata,u8 yselect)
         tempx1=x1;
         tempy1=y2-(griddata->right_buff[0]-griddata->right_ymin)/vpp*high;
 
-        griddata->lastbuff[1][0]=tempy1;
+        if(tempx1 < x1)
+            tempx1 = x1;
+        else if(tempx1 > x2)
+            tempx1 = x2;
+
+        if(tempy1 < y1)
+            tempy1 = y1;
+        else if(tempy1 > y2)
+            tempy1 = y2;
+
+        griddata->lastbuff[1][0].x=tempx1;
+        griddata->lastbuff[1][0].y=tempy1;
 
         for(i=1; i<length; i++)
         {
@@ -1103,14 +1104,27 @@ void Draw_Graph(GRAPH_Struct *griddata,u8 yselect)
 
             tempy2=y2-(griddata->right_buff[i]-griddata->right_ymin)/vpp*high;
 
+            if(tempx2 < x1)
+                tempx2 = x1;
+            else if(tempx2 > x2)
+                tempx2 = x2;
+
+            if(tempy2 < y1)
+                tempy2 = y1;
+            else if(tempy2 > y2)
+                tempy2 = y2;
+
             OS_Line_Draw(tempx1,tempy1,tempx2,tempy2,griddata->right_ycolor);
 
-            griddata->lastbuff[1][i]=tempy2;
+            griddata->lastbuff[1][i].x=tempx2;
+            griddata->lastbuff[1][i].y=tempy2;
 
             tempx1=tempx2;
             tempy1=tempy2;
         }
     }
+
+    griddata->last_length = length;
 
     //更新光标显示
     griddata->cursor_refrssh=1;
@@ -1187,24 +1201,27 @@ void Cursor_Data_Show(GRAPH_Struct *griddata,u8 yselect)
             if(num < length)
             {
                 if(yselect & LEFTY && griddata->lastcursor_x != 0)
-                    OS_Line_Draw(griddata->lastcursor_x,griddata->lastbuff[0][num],griddata->lastcursor_x+xstep,griddata->lastbuff[0][num+1],griddata->left_ycolor);
+                    OS_Line_Draw(griddata->lastcursor_x,griddata->lastbuff[0][num].y,griddata->lastcursor_x+xstep,griddata->lastbuff[0][num+1].y,griddata->left_ycolor);
 
                 if(yselect & RIGHTY && griddata->lastcursor_x != 0)
-                    OS_Line_Draw(griddata->lastcursor_x,griddata->lastbuff[1][num],griddata->lastcursor_x+xstep,griddata->lastbuff[1][num+1],griddata->right_ycolor);
+                    OS_Line_Draw(griddata->lastcursor_x,griddata->lastbuff[1][num].y,griddata->lastcursor_x+xstep,griddata->lastbuff[1][num+1].y,griddata->right_ycolor);
             }
 
-            //补全网格
-            if((griddata->lastcursor_x % (u16)xcase) == 0 && griddata->lastcursor_x != 0)
+            if(griddata->grid == 1)
             {
-                if((griddata->lastcursor_x % (u16)(xcase*5)) == 0)
+                //补全网格
+                if((griddata->lastcursor_x % (u16)xcase) == 0 && griddata->lastcursor_x != 0)
                 {
-                    for(i=y1; i<y2; i+=ycase)
-                        OS_Point_Draw(griddata->lastcursor_x,i,griddata->griacolor);
-                }
-                else
-                {
-                    for(i=y1; i<=y2; i+=ycase*5)
-                        OS_Point_Draw(griddata->lastcursor_x,i,griddata->griacolor);
+                    if((griddata->lastcursor_x % (u16)(xcase*5)) == 0)
+                    {
+                        for(i=y1; i<y2; i+=ycase)
+                            OS_Point_Draw(griddata->lastcursor_x,i,griddata->griacolor);
+                    }
+                    else
+                    {
+                        for(i=y1; i<=y2; i+=ycase*5)
+                            OS_Point_Draw(griddata->lastcursor_x,i,griddata->griacolor);
+                    }
                 }
             }
         }

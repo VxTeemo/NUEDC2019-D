@@ -165,7 +165,12 @@ typedef struct GRAPH_Struct
 		u8   cursor_refrssh;//光标更新标志
 	
 	  //以下内容不需要用户去处理
-	  u16 lastbuff[2][OS_LCD_WHITH];			//上一次的两个纵坐标值
+		struct POINT
+		{
+				u16 x;
+        u16 y;			
+		}lastbuff[2][OS_LCD_WHITH];			//上一次的两个纵坐标值
+		u16 last_length;
 
 }GRAPH_Struct;
 
