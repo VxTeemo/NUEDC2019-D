@@ -91,10 +91,10 @@ void FreqAna_main()
 
 //        if(Fault_Change_Flag)
 //        {
-            task_1_3();
-            OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.3f   ");
-            OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.3f   ");
-            OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.3f   ");
+        task_1_3();
+        OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.3f   ");
+        OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.3f   ");
+        OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.3f   ");
 //            Fault_Change_Flag = 0;
 //        }
 
@@ -193,7 +193,7 @@ void AD9851_Sweep(void)
         dds.range = ADS9851_V;
         sendData(dds);
         delay_ms(1);
-        SignalData[i] = ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM);
+        SignalData[i] = ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM);
         AvData[i] = 20 * log10(SignalData[i] / ADS9851_V);
 
         if(i % 33)  //一个循环3次
@@ -228,7 +228,7 @@ __inline float ADS1256_Measure(float fre, float range, u32 delay)
     dds.range = range;
     sendData(dds);
     delay_ms(delay);
-    return Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM));
+    return Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM));
 }
 
 
@@ -384,7 +384,7 @@ void AD9851_Sweep_once(int control, u32 index)
     dds.fre= log_table[i];
     sendData(dds);
     delay_ms(1);
-    SignalData[i] = ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM);
+    SignalData[i] = ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM);
 
 }
 
@@ -436,57 +436,84 @@ void Calib_Audion()
  * Parameters:  void
  * Description: 测试输入、输出电阻，增益
  */
+#define KEY_TEST 1 //按键测试
 void task_1_3(void)
 {
-    float Vol0,Vol1,Vol2;
+    float Vol_in,Vol_Out,Vol_Out_Load;
+    float vol_temp;
 
     LED1 = 0;
-    //当前测量一轮44ms
-    dds.fre=1000;
 
-    dds.range=0.01;
+#if KEY_TEST == 1
+	OS_String_Show(180-32,390+16*2,16,1,"  ");
+	OS_String_Show(180-32,390     ,16,1,"->");
+    while(1)
+    {
+#endif
 
-    sendData(dds);
+        dds.fre=1000;
+        dds.range=0.1;		//大电压测输入
+        sendData(dds);
 
+        Relay_Control(1,0);	//连接输入检测端
+        delay_ms(100);
+        Vol_in=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //输入端电压
+        Vol_in=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //输入端电压
+        OS_Num_Show(180,390     ,16,1,Vol_in,"Vol_in:%0.3f   ");
 
-    Relay_Control(1,0);	//J3继电器切换高电平
-    delay_ms(100);
-    Vol0=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量标准电阻输出端电压
-    delay_ms(100);
-    Vol0=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量标准电阻输出端电压
-    OS_Num_Show(180,370     ,16,1,Vol0,"Vol0:%0.3f   ");
+#if KEY_TEST == 1
+        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
+            break;
+    }
+#endif
 
-//314mv
-//1.68V
+#if KEY_TEST == 1
+	OS_String_Show(180-32,390     ,16,1,"  ");
+	OS_String_Show(180-32,390+16  ,16,1,"->");
+    while(1)
+    {
+#endif
 
-    Relay_Control(1,1);	//J3继电器切换低电平
-    Relay_Control(4,0);	//J2继电器切换低电平  先测无负载
-    delay_ms(100);
-    Vol1=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
-    delay_ms(100);
-    Vol1=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
-    OS_Num_Show(180,370+16  ,16,1,Vol1,"Vol1:%0.3f   ");
-    //不用关J4
-    //Relay_Control(4,1);	//J2继电器切换高电平 输出带4k负载
+        dds.range=0.01;
+        sendData(dds);
+        Relay_Control(1,1);	//断开输入检测端
+        Relay_Control(4,0);	//连接输出检测端
+        delay_ms(100);
+        Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
+        Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
+        OS_Num_Show(180,390+16  ,16,1,Vol_Out,"Vol_Out:%0.3f   ");
 
+#if KEY_TEST == 1
+        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
+            break;
+    }
+#endif
 
+#if KEY_TEST == 1
+	OS_String_Show(180-32,390+16  ,16,1,"  ");
+	OS_String_Show(180-32,390+16*2,16,1,"->");
+    while(1)
+    {
+#endif
 
-    Relay_Control(3,0);	//J2继电器切换高电平 输出带4k负载
-    delay_ms(100);
-    Vol2=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
-    delay_ms(100);
-    Vol2=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
-    OS_Num_Show(180,370+16*2,16,1,Vol2,"Vol2:%0.3f   ");
+        Relay_Control(3,0);	//连接负载
+        delay_ms(100);
+        Vol_Out_Load=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压 带4k负载
+        Vol_Out_Load=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压 带4k负载
+        OS_Num_Show(180,390+16*2,16,1,Vol_Out_Load,"Vol_Out_Load:%0.3f   ");
 
+#if KEY_TEST == 1
+        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
+            break;
+    }
+#endif
 
+    Rin=(R_Real * Vol_in ) / (ADS9851_V - Vol_in );  //输入电阻
 
-    All_Gain=Vol1/Vol0;     //增益
+    vol_temp = 0.01f*Rin/(5000+Rin);
+    All_Gain = Vol_Out/vol_temp;     //增益
 
-    Rin=(R_Real * Vol0 ) / (ADS9851_V - Vol0 );  //输入电阻
-
-    Rout=(Vol1 / Vol2 - 1.0f )* 4000 ;   //输出电阻
-
-
+    Rout=(Vol_Out / Vol_Out_Load - 1.0f )* 4000 ;   //输出电阻
 
 
     GPIO_SetBits(GPIOG, GPIO_Pin_1 | GPIO_Pin_3| GPIO_Pin_5| GPIO_Pin_7);

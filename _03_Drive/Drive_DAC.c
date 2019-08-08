@@ -86,7 +86,7 @@ void Dac2_Set_Vol(u16 vol)
 	double temp=vol;
 	temp/=1000;
 	temp=temp*4096/3.3;
-    DAC_SetChannel2Data(DAC_Align_12b_R,vol);//12位右对齐数据格式设置DAC值
+    DAC_SetChannel2Data(DAC_Align_12b_R,(uint16_t)temp);//12位右对齐数据格式设置DAC值
 }
 
 static double ddsSinWave(uint32_t t, uint32_t T,double cycle)
