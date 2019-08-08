@@ -407,6 +407,11 @@
               <FileType>1</FileType>
               <FilePath>.\_01_App\App_NIT.c</FilePath>
             </File>
+            <File>
+              <FileName>App_Test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\_03_Drive\App_Test.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

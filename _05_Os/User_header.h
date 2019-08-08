@@ -61,7 +61,7 @@
 //#include "App_ADF4360.h"
 //#include "App_CAN.h"
 //#include "App_analysis.h"
-
+#include "App_Test.h"
 #include "App_NIT.h"
 
 /*Çý¶¯ÎÄ¼þ*/

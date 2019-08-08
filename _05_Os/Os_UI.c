@@ -34,14 +34,14 @@ void OS_Char_Show(u16 x, u16 y, u8 num, u8 size, u8 mode);
 int OS_LCD_Init(void)
 {
     TFT_LCD_Init();
-    LCD_Clear(BLACK);//清屏
+    LCD_Clear(WHITE);//清屏
     if(font_init())
     {
         OS_String_Show(400, 200, 32, 1, "Font Error!!!"); //检查字库
         return -1;
     }
-    TextColor = WHITE;
-    BackColor = BLACK;
+    TextColor = BLACK;
+    BackColor = WHITE;
 
     return 0;
 
@@ -1006,12 +1006,12 @@ void Draw_Graph(GRAPH_Struct *griddata,u8 yselect)
     //清除上次的波形
     if(yselect & LEFTY)
     {
-//				tempx1=x1;
-//				for(i=1;i<length;i++)
-//				{
-//						tempx2=x1+i*xstep;
-//						OS_Line_Draw(tempx1,griddata->lastbuff[0][i-1],tempx2,griddata->lastbuff[0][i],griddata->Backcolor);
-//				}
+				tempx1=x1;
+				for(i=1;i<length;i++)
+				{
+						tempx2=x1+i*xstep;
+						OS_Line_Draw(tempx1,griddata->lastbuff[0][i-1],tempx2,griddata->lastbuff[0][i],griddata->Backcolor);
+				}
         if(!frist)
         {
             for(i=0; i<length; i++)
@@ -1053,39 +1053,39 @@ void Draw_Graph(GRAPH_Struct *griddata,u8 yselect)
     //画波形
     if(yselect & LEFTY)
     {
-//				vpp=griddata->left_ymax-griddata->left_ymin;
-//
-//			  tempx1=x1;
-//			  tempy1=y2-(griddata->left_buff[0]-griddata->left_ymin)/vpp*high;
-//
-//			  griddata->lastbuff[0][0]=tempy1;//保存本次数据
-//
-//			  for(i=1;i<length;i++)
-//			  {
-//					tempx2=x1+i*xstep;
-//
-//					tempy2=y2-(griddata->left_buff[i]-griddata->left_ymin)/vpp*high;
-//
-//					OS_Line_Draw(tempx1,tempy1,tempx2,tempy2,griddata->left_ycolor);
-//
-//					griddata->lastbuff[0][i]=tempy2;//保存本次数据
-//
-//					tempx1=tempx2;
-//					tempy1=tempy2;
-//				}
+				vpp=griddata->left_ymax-griddata->left_ymin;
 
-        vpp=griddata->left_ymax-griddata->left_ymin;
+			  tempx1=x1;
+			  tempy1=y2-(griddata->left_buff[0]-griddata->left_ymin)/vpp*high;
 
-        for(i=0; i<length; i++)
-        {
-            tempx1=x1+i*xstep;
+			  griddata->lastbuff[0][0]=tempy1;//保存本次数据
 
-            tempy1=y2-(griddata->left_buff[i]-griddata->left_ymin)/vpp*high;
+			  for(i=1;i<length;i++)
+			  {
+					tempx2=x1+i*xstep;
 
-            OS_Line_Draw(tempx1,y2,tempx1,tempy1,griddata->left_ycolor);
+					tempy2=y2-(griddata->left_buff[i]-griddata->left_ymin)/vpp*high;
 
-            griddata->lastbuff[0][i]=tempy1;//保存本次数据
-        }
+					OS_Line_Draw(tempx1,tempy1,tempx2,tempy2,griddata->left_ycolor);
+
+					griddata->lastbuff[0][i]=tempy2;//保存本次数据
+
+					tempx1=tempx2;
+					tempy1=tempy2;
+				}
+
+//        vpp=griddata->left_ymax-griddata->left_ymin;
+
+//        for(i=0; i<length; i++)
+//        {
+//            tempx1=x1+i*xstep;
+
+//            tempy1=y2-(griddata->left_buff[i]-griddata->left_ymin)/vpp*high;
+
+//            OS_Line_Draw(tempx1,y2,tempx1,tempy1,griddata->left_ycolor);
+
+//            griddata->lastbuff[0][i]=tempy1;//保存本次数据
+//        }
     }
 
     if(yselect & RIGHTY)

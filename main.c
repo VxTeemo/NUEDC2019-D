@@ -23,10 +23,10 @@ unsigned int TASK_0_STK[64];
 unsigned int TASK_1_STK[128];
 unsigned int TASK_2_STK[128];
 unsigned int TASK_3_STK[4096];
-//unsigned int TASK_4_STK[4096];
+unsigned int TASK_4_STK[4096];
 
 unsigned int TASK_5_STK[256];
-unsigned int TASK_6_STK[16000];
+unsigned int TASK_6_STK[8000];
 
 unsigned int EXTR_STK[84];
 /************************************************************************************************************
@@ -80,9 +80,9 @@ int main()
 
     //Task_Create(ADF4351_Sweep_main,&TASK_3_STK[256-1],4);
 
-    //Task_Create(ADF4351_main,&TASK_4_STK[4096-1],5);
+    //Task_Create(Test_main,&TASK_4_STK[4096-1],5);
 
-    Task_Create(FreqAna_main,&TASK_6_STK[16000-1],6);
+    Task_Create(FreqAna_main,&TASK_6_STK[8000-1],6);
 
     //OSTaskSuspend(6);    //¹ÒÆðÈÎÎñ
 

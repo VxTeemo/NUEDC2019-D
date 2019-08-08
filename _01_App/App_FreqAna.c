@@ -59,7 +59,7 @@ float AD_DC_R4S      = 0.135f/4.0f;    	//R4短 RS应为0
 //#define MEASURE_LENGTH	200 	//单片机显示测量点数
 //#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进)
 #define R_Real    5000.0f       //固定电阻大小
-#define ADS9851_V   0.01f       //9851输出幅度
+#define ADS9851_V   1.0f       //9851输出幅度
 
 GRAPH_Struct 	GridData;		//网格结构体定义
 const int log_table_length = sizeof(log_table)/sizeof(float);//101
@@ -71,7 +71,7 @@ int last_fault = Fault_Type_Normal;
 u8 Fault_Change_Flag = 1;//上电检测一次
 u8 UpdateGragh = 0;
 
-void DDSDataInit(void);
+void DDSDataInit2(void);
 void task_1_3(void);
 Fault_Type Fault_Detect(void);
 float ADS1256_Measure(float fre, float range, u32 delay);
@@ -80,21 +80,22 @@ void FreqAna_main()
 {
     GridData_Init();
 
-    DDSDataInit();
+    DDSDataInit2();
     //sendData(dds);
 
     Draw_Grid(GridData);
-    Draw_Graph(&GridData,LEFTY);
+    //Draw_Graph(&GridData,LEFTY);
+	Show_Label(GridData,LEFTY);
 
     while(1)
     {
 
 //        if(Fault_Change_Flag)
 //        {
-        task_1_3();
-        OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.3f   ");
-        OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.3f   ");
-        OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.3f   ");
+//        task_1_3();
+//        OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.3f   ");
+//        OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.3f   ");
+//        OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.3f   ");
 //            Fault_Change_Flag = 0;
 //        }
 
@@ -107,14 +108,16 @@ void FreqAna_main()
 //        Show_Label(GridData,LEFTY);
 
 
-//        if(UpdateGragh)
-//        {
-//            Draw_Graph(&GridData,LEFTY);
-//            UpdateGragh = 0;
-//        }
-
-
-
+        if(UpdateGragh)
+        {
+            Draw_Graph(&GridData,LEFTY);
+            UpdateGragh = 0;
+        }
+		
+        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
+        {
+			AD9851_Sweep();
+        }
 
 //        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
 //        {
@@ -184,7 +187,7 @@ void GridData_Init(void)
 void AD9851_Sweep(void)
 {
     u32 i;
-    Fault_Type fault_Type;
+//    Fault_Type fault_Type;
     LED1 = 0;
     //测试延时1ms，101点，一轮循环耗时600ms
     for(i=0; i<101; i++)
@@ -194,24 +197,30 @@ void AD9851_Sweep(void)
         dds.fre= log_table[i];
         dds.range = ADS9851_V;
         sendData(dds);
-        delay_ms(50);
+		if(i<20)
+			delay_ms(100);
+		else
+			delay_ms(20);
 		
-        SignalData[i] = ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM);
-        AvData[i] = 20 * log10(SignalData[i] / ADS9851_V);
+        SignalData[i] = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM));
+        SignalData[i] = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM));
+        AvData[i] = 20 * log10(SignalData[i] / (ADS9851_V / 5));
+		OS_Num_Show(250,390     ,16,1,SignalData[i],"***%0.3f   ");
+		OS_Num_Show(250,390+16  ,16,1,AvData[i],"***%0.3f   ");
 
-        if(i % 33)  //一个循环3次
-        {
-            fault_Type = Fault_Detect();
-            if(last_fault != fault_Type)//和上次状态不一样，更新参数，更新故障类型显示
-            {
-                Fault_Change_Flag = 1;
-                last_fault = fault_Type;
-                OS_String_Show(10,390+16*3,16,1,Fault_Type_str[fault_Type]);
-                return ;//剩下的频率暂时不扫描，优先测量显示参数
-            }
-            last_fault = fault_Type;
+//        if(i % 33)  //一个循环3次
+//        {
+//            fault_Type = Fault_Detect();
+//            if(last_fault != fault_Type)//和上次状态不一样，更新参数，更新故障类型显示
+//            {
+//                Fault_Change_Flag = 1;
+//                last_fault = fault_Type;
+//                OS_String_Show(10,390+16*3,16,1,Fault_Type_str[fault_Type]);
+//                return ;//剩下的频率暂时不扫描，优先测量显示参数
+//            }
+//            last_fault = fault_Type;
 
-        }
+//        }
 
         if(i==100)
             UpdateGragh = 1;
@@ -401,7 +410,7 @@ void AD9851_Sweep_once(int control, u32 index)
  * Parameters:  void
  * Description: DDS数据初始化
  */
-__inline void DDSDataInit(void)
+__inline void DDSDataInit2(void)
 {
     /*	输出幅度 15mv	*/
     dds.range=0.015;

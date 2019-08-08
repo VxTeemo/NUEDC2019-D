@@ -2,7 +2,7 @@
 #define __App_NIT_H 
 
 #include "User_header.h" 
-#include "Drive_Communication.h"
+
 
 void NIT_main(void);
 
