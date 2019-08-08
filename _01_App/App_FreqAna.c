@@ -41,7 +41,7 @@ float AD_AC50k_C3D   = 0.0f;    	//50k 100mv C3翻倍的情况
 float AD_AC15_C1D    = UNKOWN_VAL0;			//15hz 1V C1翻倍的情况 目前还没有值
 float AD_AC15_C2D    = UNKOWN_VAL1;			//15hz 1V C2翻倍的情况 目前还没有值
 float AD_AC_C2O      = 0.053f;				// C2开路的情况
-float AD_AC_C1O_R    = 0.0f;    				//剩下的情况 C1开路 电阻故障 1k0.1v交流为0
+float AD_AC_C1O_R    = 0.0f;    			//剩下的情况 C1开路 电阻故障 1k0.1v交流为0
 float AD_DC_C1O      = 7.6f/4.0f;  			//C1开路或检测错误的情况
 float AD_AC_C1O      = 0.03536f; 		//C1开路的情况
 float AD_DC_R_FULL   = 11.98f/4.0f;    	//电阻故障中直流最大的情况 包括R1开 R2短 R3短 R4开
@@ -49,10 +49,10 @@ float AD_RS_R1O      = 0.084f;    		//R1开
 float AD_RS_R4O      = 0.074f;    		//R4开
 float AD_RS_R3S      = 0.030f;    		//R3短
 float AD_RS_R2S      = 0.000f;    		//R2短
-float AD_DC_R1S   = 11.23f/4.0f;    	//R1短 RS应为0
-float AD_DC_R2O   = 4.19f/4.0f;    		//R2开 RS应为0
-float AD_DC_R3O   = 0.221f/4.0f;    	//R3开 RS应为5mv
-float AD_DC_R4S   = 0.135f/4.0f;    	//R4短 RS应为0
+float AD_DC_R1S      = 11.23f/4.0f;    	//R1短 RS应为0
+float AD_DC_R2O      = 4.19f/4.0f;    	//R2开 RS应为0
+float AD_DC_R3O      = 0.221f/4.0f;    	//R3开 RS应为5mv
+float AD_DC_R4S      = 0.135f/4.0f;    	//R4短 RS应为0
 
 
 //#define MEASURE_LENGTH	200 	//单片机显示测量点数
@@ -68,9 +68,7 @@ float AvData[log_table_length]= {0};			//转换成对数
 float VMax_Fre,Rin,Rout,All_Gain;
 int last_fault = Fault_Type_Normal;
 u8 Fault_Change_Flag = 1;//上电检测一次
-
-
-
+u8 UpdateGragh = 0;
 
 void DDSDataInit(void);
 void task_1_3(void);
@@ -85,20 +83,19 @@ void FreqAna_main()
     //sendData(dds);
 	
     Draw_Grid(GridData);
-
     Draw_Graph(&GridData,LEFTY);
 
     while(1)
     {
 		
-//		if(Fault_Change_Flag)
-//		{
+		if(Fault_Change_Flag)
+		{
 			task_1_3();
-//			OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.0f   ");
-//			OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.0f   ");
-//			OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.0f   ");
-//			Fault_Change_Flag = 0;
-//		}
+			OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.0f   ");
+			OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.0f   ");
+			OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.0f   ");
+			Fault_Change_Flag = 0;
+		}
 
 //			LED1 = 0;
 //			Fault_Detect();
@@ -107,7 +104,17 @@ void FreqAna_main()
 
         Draw_Grid(GridData);
         Show_Label(GridData,LEFTY);
-
+		
+		
+		if(UpdateGragh)
+		{
+			Draw_Graph(&GridData,LEFTY);
+			UpdateGragh = 0;
+		}
+		
+		
+		
+		
 //        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
 //        {
 //            OS_LCD_Clear(WHITE);
@@ -120,7 +127,7 @@ void FreqAna_main()
 
 
 
-//        AD9851_Sweep();
+        AD9851_Sweep();
 
         OSTimeDly(111);//考虑删掉，任务执行时有延时
 
@@ -191,20 +198,22 @@ void AD9851_Sweep(void)
 		if(i % 33)  //一个循环3次
 		{
 			fault_Type = Fault_Detect();
-			if(fault_Type != Fault_Type_Normal)
-			{
-				OS_String_Show(10,390+16*3,16,1,Fault_Type_str[fault_Type]);
-			}
-			if(last_fault != fault_Type)
+			if(last_fault != fault_Type)//和上次状态不一样，更新参数，更新故障类型显示
 			{
 				Fault_Change_Flag = 1;
 				last_fault = fault_Type;
+				OS_String_Show(10,390+16*3,16,1,Fault_Type_str[fault_Type]);
+				return ;//剩下的频率暂时不扫描，优先测量显示参数
 			}
-			
+			last_fault = fault_Type;
 			
 		}
+
+		if(i==100)
+			UpdateGragh = 1;
 		
     }
+	
     LED1 = 1;
 }
 
@@ -459,4 +468,7 @@ void task_1_3(void)
 
 }
 
-
+void SelfCalibration(void)
+{
+	
+}
