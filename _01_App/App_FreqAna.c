@@ -11,23 +11,25 @@
 #include "App_FreqAna.h"
 #include "log_table.inc"
 
-//#define MEASURE_LENGTH	200 	//单片机显示测量点数
-//#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进) 
-#define R_Real    5000.0f       //固定电阻大小
-#define ADS9851_V   0.01f       //9851输出幅度
+char Fault_Type_str[][10]={
+	"正常",
+	"未知异常",
+	"R1开路",
+	"R1短路",
+	"R2开路",
+	"R2短路",
+	"R3开路",
+	"R3短路",
+	"R4开路",
+	"R4短路",
+	"C1开路",
+	"C2开路",
+	"C3开路",
+	"C1翻倍",
+	"C2翻倍",
+	"C3翻倍"
+};
 
-GRAPH_Struct 	GridData;		//网格结构体定义
-
-const int log_table_length = sizeof(log_table)/sizeof(float);//101
-float SignalData[log_table_length]= {0};   //采集的原始数据
-float AvData[log_table_length]= {0};			//转换成对数
-
-float VMax_Fre,Rin,Rout,All_Gain;
-
-void DDSDataInit(void);
-void task_1_3(void);
-Fault_Type Fault_Detect(void);
-float ADS1256_Measure(float fre, float range, u32 delay);
 
 #define UNKOWN_VAL0 1.2f
 #define UNKOWN_VAL1 1.3f
@@ -53,6 +55,28 @@ float AD_DC_R3O   = 0.221f/4.0f;    	//R3开 RS应为5mv
 float AD_DC_R4S   = 0.135f/4.0f;    	//R4短 RS应为0
 
 
+//#define MEASURE_LENGTH	200 	//单片机显示测量点数
+//#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进) 
+#define R_Real    5000.0f       //固定电阻大小
+#define ADS9851_V   0.01f       //9851输出幅度
+
+GRAPH_Struct 	GridData;		//网格结构体定义
+const int log_table_length = sizeof(log_table)/sizeof(float);//101
+float SignalData[log_table_length]= {0};   //采集的原始数据
+float AvData[log_table_length]= {0};			//转换成对数
+
+float VMax_Fre,Rin,Rout,All_Gain;
+int last_fault = Fault_Type_Normal;
+u8 Fault_Change_Flag = 1;//上电检测一次
+
+
+
+
+void DDSDataInit(void);
+void task_1_3(void);
+Fault_Type Fault_Detect(void);
+float ADS1256_Measure(float fre, float range, u32 delay);
+
 void FreqAna_main()
 {
     GridData_Init();
@@ -65,19 +89,23 @@ void FreqAna_main()
 
     while(1)
     {
-        task_1_3();
-        OS_Num_Show(10,370     ,16,1,Rin,"Rin:%0.0f   ");
-        OS_Num_Show(10,370+16  ,16,1,Rout,"Rout:%0.0f   ");
-        OS_Num_Show(10,370+16*2,16,1,All_Gain,"Gain:%0.0f   ");
+		
+		if(Fault_Change_Flag)
+		{
+			task_1_3();
+			OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.0f   ");
+			OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.0f   ");
+			OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.0f   ");
+			Fault_Change_Flag = 0;
+		}
 
 //			LED1 = 0;
 //			Fault_Detect();
 //			LED1 = 1;
 
 
-//        Draw_Grid(GridData);
-
-//        Show_Label(GridData,LEFTY);
+        Draw_Grid(GridData);
+        Show_Label(GridData,LEFTY);
 
 //        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
 //        {
@@ -91,9 +119,9 @@ void FreqAna_main()
 
 
 
-        //AD9851_Sweep();
+        AD9851_Sweep();
 
-        OSTimeDly(111);
+        OSTimeDly(111);//考虑删掉，任务执行时有延时
 
     }
 
@@ -147,6 +175,7 @@ void GridData_Init(void)
 void AD9851_Sweep(void)
 {
     u32 i;
+	Fault_Type fault_Type;
     LED1 = 0;
     //测试延时1ms，101点，一轮循环耗时600ms
     for(i=0; i<101; i++)
@@ -157,6 +186,23 @@ void AD9851_Sweep(void)
         delay_ms(1);
         SignalData[i] = ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM);
 		AvData[i] = 20 * log10(SignalData[i] / ADS9851_V);
+		
+		if(i % 33)  //一个循环3次
+		{
+			fault_Type = Fault_Detect();
+			if(fault_Type != Fault_Type_Normal)
+			{
+				OS_String_Show(10,390+16*3,16,1,Fault_Type_str[fault_Type]);
+			}
+			if(last_fault != fault_Type)
+			{
+				Fault_Change_Flag = 1;
+				last_fault = fault_Type;
+			}
+			
+			
+		}
+		
     }
     LED1 = 1;
 }
@@ -195,8 +241,6 @@ Fault_Type Fault_Detect(void)
     Relay_Control(0,1);	//J3继电器切换高电平 测量网络输出 AC
     Relay_Control(1,0);	//J2继电器切换低电平 无负载
     VolAC =  ADS1256_Measure(1000, 0.1, 1);
-
-
 
     if(RANGEIN(VolAC,AD_ACNormal,0.05f)) //交流正常
     {
@@ -407,9 +451,9 @@ void task_1_3(void)
 
     Rout=(Vol1 / Vol2 - 1.0f )* 4000 ;   //输出电阻
 
-    OS_Num_Show(120,370     ,16,1,Vol0,"Vol0:%0.2f   ");
-    OS_Num_Show(120,370+16  ,16,1,Vol1,"Vol1:%0.2f   ");
-    OS_Num_Show(120,370+16*2,16,1,Vol2,"Vol2:%0.2f   ");
+    OS_Num_Show(120,390     ,16,1,Vol0,"Vol0:%0.2f   ");
+    OS_Num_Show(120,390+16  ,16,1,Vol1,"Vol1:%0.2f   ");
+    OS_Num_Show(120,390+16*2,16,1,Vol2,"Vol2:%0.2f   ");
     LED1 = 1;
 
 }
