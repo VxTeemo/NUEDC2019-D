@@ -51,6 +51,8 @@ void OS_Init()
     /*    各模块初始化      */
 	
 	ADS1256_Init();     //24位AD初始化
+	Dac2_Init();
+	Dac2_Set_Vol(2000);
 
     GridData_Init();   // 画图表格初始化
 	Relay_Init();

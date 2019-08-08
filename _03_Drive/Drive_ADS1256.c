@@ -262,7 +262,7 @@ u32 ADS1256ReadData(u8 channel)
 
     ADS1256_CS_1();
 
-    //while(ADS1256_DRDY);
+    while(ADS1256_DRDY);
 
     return sum;
 }

@@ -11,23 +11,24 @@
 #include "App_FreqAna.h"
 #include "log_table.inc"
 
-char Fault_Type_str[][10]={
-	"正常",
-	"未知异常",
-	"R1开路",
-	"R1短路",
-	"R2开路",
-	"R2短路",
-	"R3开路",
-	"R3短路",
-	"R4开路",
-	"R4短路",
-	"C1开路",
-	"C2开路",
-	"C3开路",
-	"C1翻倍",
-	"C2翻倍",
-	"C3翻倍"
+char Fault_Type_str[][10]=
+{
+    "正常",
+    "未知异常",
+    "R1开路",
+    "R1短路",
+    "R2开路",
+    "R2短路",
+    "R3开路",
+    "R3短路",
+    "R4开路",
+    "R4短路",
+    "C1开路",
+    "C2开路",
+    "C3开路",
+    "C1翻倍",
+    "C2翻倍",
+    "C3翻倍"
 };
 
 
@@ -56,7 +57,7 @@ float AD_DC_R4S      = 0.135f/4.0f;    	//R4短 RS应为0
 
 
 //#define MEASURE_LENGTH	200 	//单片机显示测量点数
-//#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进) 
+//#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进)
 #define R_Real    5000.0f       //固定电阻大小
 #define ADS9851_V   0.01f       //9851输出幅度
 
@@ -81,40 +82,40 @@ void FreqAna_main()
 
     DDSDataInit();
     //sendData(dds);
-	
+
     Draw_Grid(GridData);
     Draw_Graph(&GridData,LEFTY);
 
     while(1)
     {
-		
-		if(Fault_Change_Flag)
-		{
-			task_1_3();
-			OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.0f   ");
-			OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.0f   ");
-			OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.0f   ");
-			Fault_Change_Flag = 0;
-		}
+
+//        if(Fault_Change_Flag)
+//        {
+            task_1_3();
+            OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.3f   ");
+            OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.3f   ");
+            OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.3f   ");
+//            Fault_Change_Flag = 0;
+//        }
 
 //			LED1 = 0;
 //			Fault_Detect();
 //			LED1 = 1;
 
 
-        Draw_Grid(GridData);
-        Show_Label(GridData,LEFTY);
-		
-		
-		if(UpdateGragh)
-		{
-			Draw_Graph(&GridData,LEFTY);
-			UpdateGragh = 0;
-		}
-		
-		
-		
-		
+//        Draw_Grid(GridData);
+//        Show_Label(GridData,LEFTY);
+
+
+//        if(UpdateGragh)
+//        {
+//            Draw_Graph(&GridData,LEFTY);
+//            UpdateGragh = 0;
+//        }
+
+
+
+
 //        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
 //        {
 //            OS_LCD_Clear(WHITE);
@@ -127,7 +128,7 @@ void FreqAna_main()
 
 
 
-        AD9851_Sweep();
+//        AD9851_Sweep();
 
         OSTimeDly(111);//考虑删掉，任务执行时有延时
 
@@ -183,37 +184,37 @@ void GridData_Init(void)
 void AD9851_Sweep(void)
 {
     u32 i;
-	Fault_Type fault_Type;
+    Fault_Type fault_Type;
     LED1 = 0;
     //测试延时1ms，101点，一轮循环耗时600ms
     for(i=0; i<101; i++)
     {
         dds.fre= log_table[i];
-		dds.range = ADS9851_V;
+        dds.range = ADS9851_V;
         sendData(dds);
         delay_ms(1);
         SignalData[i] = ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM);
-		AvData[i] = 20 * log10(SignalData[i] / ADS9851_V);
-		
-		if(i % 33)  //一个循环3次
-		{
-			fault_Type = Fault_Detect();
-			if(last_fault != fault_Type)//和上次状态不一样，更新参数，更新故障类型显示
-			{
-				Fault_Change_Flag = 1;
-				last_fault = fault_Type;
-				OS_String_Show(10,390+16*3,16,1,Fault_Type_str[fault_Type]);
-				return ;//剩下的频率暂时不扫描，优先测量显示参数
-			}
-			last_fault = fault_Type;
-			
-		}
+        AvData[i] = 20 * log10(SignalData[i] / ADS9851_V);
 
-		if(i==100)
-			UpdateGragh = 1;
-		
+        if(i % 33)  //一个循环3次
+        {
+            fault_Type = Fault_Detect();
+            if(last_fault != fault_Type)//和上次状态不一样，更新参数，更新故障类型显示
+            {
+                Fault_Change_Flag = 1;
+                last_fault = fault_Type;
+                OS_String_Show(10,390+16*3,16,1,Fault_Type_str[fault_Type]);
+                return ;//剩下的频率暂时不扫描，优先测量显示参数
+            }
+            last_fault = fault_Type;
+
+        }
+
+        if(i==100)
+            UpdateGragh = 1;
+
     }
-	
+
     LED1 = 1;
 }
 
@@ -421,6 +422,20 @@ __inline void DDSDataInit(void)
 
 }
 
+/*
+ * Return:      void
+ * Parameters:  void
+ * Description: 校准三极管参数
+ */
+void Calib_Audion()
+{
+
+}
+/*
+ * Return:      void
+ * Parameters:  void
+ * Description: 测试输入、输出电阻，增益
+ */
 void task_1_3(void)
 {
     float Vol0,Vol1,Vol2;
@@ -429,31 +444,41 @@ void task_1_3(void)
     //当前测量一轮44ms
     dds.fre=1000;
 
-    //dds.range=0.01;
+    dds.range=0.01;
 
     sendData(dds);
 
-    Relay_Control(0,1);	//J3继电器切换高电平 测量网络输出
 
-    delay_ms(10);
+    Relay_Control(1,0);	//J3继电器切换高电平
+    delay_ms(100);
+    Vol0=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量标准电阻输出端电压
+    delay_ms(100);
+    Vol0=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量标准电阻输出端电压
+    OS_Num_Show(180,370     ,16,1,Vol0,"Vol0:%0.3f   ");
 
-    Vol0=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量标准电阻输出端电压
+//314mv
+//1.68V
 
-    //delay_ms(10);
+    Relay_Control(1,1);	//J3继电器切换低电平
+    Relay_Control(4,0);	//J2继电器切换低电平  先测无负载
+    delay_ms(100);
+    Vol1=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
+    delay_ms(100);
+    Vol1=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
+    OS_Num_Show(180,370+16  ,16,1,Vol1,"Vol1:%0.3f   ");
+    //不用关J4
+    //Relay_Control(4,1);	//J2继电器切换高电平 输出带4k负载
 
-    Relay_Control(0,0);	//J3继电器切换低电平 测量网络输入端
 
-    Relay_Control(1,0);	//J2继电器切换低电平  先测无负载
 
-    delay_ms(10);
+    Relay_Control(3,0);	//J2继电器切换高电平 输出带4k负载
+    delay_ms(100);
+    Vol2=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
+    delay_ms(100);
+    Vol2=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
+    OS_Num_Show(180,370+16*2,16,1,Vol2,"Vol2:%0.3f   ");
 
-    Vol1=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
 
-    Relay_Control(1,1);	//J2继电器切换高电平 输出带4k负载
-
-    delay_ms(10);
-
-    Vol2=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
 
     All_Gain=Vol1/Vol0;     //增益
 
@@ -461,14 +486,18 @@ void task_1_3(void)
 
     Rout=(Vol1 / Vol2 - 1.0f )* 4000 ;   //输出电阻
 
-    OS_Num_Show(120,390     ,16,1,Vol0,"Vol0:%0.2f   ");
-    OS_Num_Show(120,390+16  ,16,1,Vol1,"Vol1:%0.2f   ");
-    OS_Num_Show(120,390+16*2,16,1,Vol2,"Vol2:%0.2f   ");
+
+
+
+    GPIO_SetBits(GPIOG, GPIO_Pin_1 | GPIO_Pin_3| GPIO_Pin_5| GPIO_Pin_7);
+    delay_ms(10);
     LED1 = 1;
 
 }
 
 void SelfCalibration(void)
 {
-	
+
 }
+
+

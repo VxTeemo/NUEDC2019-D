@@ -83,9 +83,9 @@ void Dac2_Init(void)
 
 void Dac2_Set_Vol(u16 vol)
 {
-//	double temp=vol;
-//	temp/=1000;
-//	temp=temp*4096/3.3;
+	double temp=vol;
+	temp/=1000;
+	temp=temp*4096/3.3;
     DAC_SetChannel2Data(DAC_Align_12b_R,vol);//12位右对齐数据格式设置DAC值
 }
 

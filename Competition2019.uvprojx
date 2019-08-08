@@ -522,11 +522,6 @@
               <FileType>1</FileType>
               <FilePath>.\_03_Drive\Drive_Relay.c</FilePath>
             </File>
-            <File>
-              <FileName>Drive_SPI.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\_03_Drive\Drive_SPI.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
