@@ -39,7 +39,7 @@ static u16 crc_16(u8 *Datas, u16 Length)
 }
 
 /**
- * @brief  UART4发送数据
+ * @brief  USART1发送数据
  * @param  *sendData : 待发送的数据
            length    : 数据长度
  * @retval 无
@@ -50,9 +50,9 @@ static void usartSendData(u8 *sendData,u16 length)
 
     for(i=0 ; i<length ; i++)
     {
-        USART_SendData(UART4,sendData[i]);
+        USART_SendData(USART1,sendData[i]);
 
-        while(USART_GetFlagStatus(UART4, USART_FLAG_TXE) == RESET);
+        while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
     }
 }
 

@@ -82,7 +82,8 @@ void FreqAna_main()
     GridData_Init();
 
     DDSDataInit();
-
+    //sendData(dds);
+	
     Draw_Grid(GridData);
 
     Draw_Graph(&GridData,LEFTY);
@@ -90,14 +91,14 @@ void FreqAna_main()
     while(1)
     {
 		
-		if(Fault_Change_Flag)
-		{
+//		if(Fault_Change_Flag)
+//		{
 			task_1_3();
-			OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.0f   ");
-			OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.0f   ");
-			OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.0f   ");
-			Fault_Change_Flag = 0;
-		}
+//			OS_Num_Show(10,390     ,16,1,Rin,"Rin:%0.0f   ");
+//			OS_Num_Show(10,390+16  ,16,1,Rout,"Rout:%0.0f   ");
+//			OS_Num_Show(10,390+16*2,16,1,All_Gain,"Gain:%0.0f   ");
+//			Fault_Change_Flag = 0;
+//		}
 
 //			LED1 = 0;
 //			Fault_Detect();
@@ -119,7 +120,7 @@ void FreqAna_main()
 
 
 
-        AD9851_Sweep();
+//        AD9851_Sweep();
 
         OSTimeDly(111);//考虑删掉，任务执行时有延时
 
