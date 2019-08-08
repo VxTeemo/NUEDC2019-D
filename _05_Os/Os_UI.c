@@ -34,14 +34,14 @@ void OS_Char_Show(u16 x, u16 y, u8 num, u8 size, u8 mode);
 int OS_LCD_Init(void)
 {
     TFT_LCD_Init();
-    LCD_Clear(WHITE);//ÇåÆÁ
+    LCD_Clear(BLACK);//ÇåÆÁ
     if(font_init())
     {
         OS_String_Show(400, 200, 32, 1, "Font Error!!!"); //¼ì²é×Ö¿â
         return -1;
     }
-    TextColor = BLACK;
-    BackColor = WHITE;
+    TextColor = WHITE;
+    BackColor = BLACK;
 
     return 0;
 

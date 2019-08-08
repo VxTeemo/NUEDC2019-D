@@ -153,8 +153,8 @@ void GridData_Init(void)
     GridData.grid=1;
 
     /*	设置对应线条颜色		*/
-    GridData.griacolor=Black;			//网格为白色
-    GridData.Backcolor=White;			//背景为黑色
+    GridData.griacolor=White;			//网格为白色
+    GridData.Backcolor=Black;			//背景为黑色
     GridData.left_ycolor=Red;			//左侧纵轴对应的曲线为黄色
 
     /*	横线、竖线数量		*/
@@ -189,10 +189,13 @@ void AD9851_Sweep(void)
     //测试延时1ms，101点，一轮循环耗时600ms
     for(i=0; i<101; i++)
     {
+		Relay_AllOFF;
+		Relay_Control(Relay_OUT,Relay_ON);	//连接输出检测端
         dds.fre= log_table[i];
         dds.range = ADS9851_V;
         sendData(dds);
-        delay_ms(1);
+        delay_ms(50);
+		
         SignalData[i] = ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM);
         AvData[i] = 20 * log10(SignalData[i] / ADS9851_V);
 
@@ -228,6 +231,7 @@ __inline float ADS1256_Measure(float fre, float range, u32 delay)
     dds.range = range;
     sendData(dds);
     delay_ms(delay);
+	Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM));
     return Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM));
 }
 
@@ -235,22 +239,24 @@ __inline float ADS1256_Measure(float fre, float range, u32 delay)
 Fault_Type Fault_Detect(void)
 {
     //当前一轮测量时间21ms 最大应该在80ms
-    float Vol,VolDC,VolAC,VolRS;
+    float Vol,VolDC,VolAC,VolIN;
 
-    //RS是被测网络输入前的电阻，VolRS是电阻后的电压
+    //被测网络输入前的电阻，VolIN是该电阻后的电压
 
-    Relay_Control(0,0);	//J3继电器切换低电平 测量网络输入端
-    Relay_Control(1,0);	//J2继电器切换低电平 无负载
+	Relay_AllOFF;
+    Relay_Control(Relay_IN,Relay_ON); //连接输入检测端
 
     dds.fre = 1000;
     dds.range = 0.1;
     sendData(dds);
-    delay_ms(1);
-    VolRS = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN3 | ADS1256_MUXN_AINCOM));
+    delay_ms(50);
+    VolIN = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM));
 
     //测量AC
-    Relay_Control(0,1);	//J3继电器切换高电平 测量网络输出 AC
-    Relay_Control(1,0);	//J2继电器切换低电平 无负载
+    Relay_Control(Relay_IN,Relay_OFF);  //断开输入检测端
+    Relay_Control(Relay_OUT,Relay_ON);	//连接输出检测端
+    delay_ms(50);
+    VolAC =  ADS1256_Measure(1000, 0.1, 1);
     VolAC =  ADS1256_Measure(1000, 0.1, 1);
 
     if(RANGEIN(VolAC,AD_ACNormal,0.05f)) //交流正常
@@ -301,7 +307,8 @@ Fault_Type Fault_Detect(void)
         dds.output = 1; 			 //9851下次控制DDS时开关才能生效
         delay_ms(10);
         //关闭ADC 测量直流
-        VolDC = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM));
+		//直流接到ADS1256的通道1
+        VolDC = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM));
 
         if(RANGEIN(VolDC,AD_DC_C1O,0.02f)) //直流在7.6V
         {
@@ -320,20 +327,20 @@ Fault_Type Fault_Detect(void)
             //上面已经测量出了1k100mv的直流和交流值
             if(RANGEIN(VolDC,AD_DC_R_FULL,0.02f))//直流在11.9V附近
             {
-                //通过判断 VolRS
-                if(RANGEIN(VolRS,AD_RS_R1O,0.004f))
+                //通过判断 VolIN
+                if(RANGEIN(VolIN,AD_RS_R1O,0.004f))
                 {
                     return Fault_Type_R1Open;
                 }
-                else if(RANGEIN(VolRS,AD_RS_R4O,0.004f))
+                else if(RANGEIN(VolIN,AD_RS_R4O,0.004f))
                 {
                     return Fault_Type_R1Short;
                 }
-                else if(RANGEIN(VolRS,AD_RS_R3S,0.004f))
+                else if(RANGEIN(VolIN,AD_RS_R3S,0.004f))
                 {
                     return Fault_Type_R3Short;
                 }
-                else if(RANGEIN(VolRS,AD_RS_R2S,0.002f))
+                else if(RANGEIN(VolIN,AD_RS_R2S,0.002f))
                 {
                     return Fault_Type_R2Short;
                 }
@@ -455,7 +462,7 @@ void task_1_3(void)
         dds.range=0.1;		//大电压测输入
         sendData(dds);
 
-        Relay_Control(1,0);	//连接输入检测端
+        Relay_Control(Relay_IN,Relay_ON);	//连接输入检测端
         delay_ms(100);
         Vol_in=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //输入端电压
         Vol_in=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //输入端电压
@@ -476,8 +483,8 @@ void task_1_3(void)
 
         dds.range=0.01;
         sendData(dds);
-        Relay_Control(1,1);	//断开输入检测端
-        Relay_Control(4,0);	//连接输出检测端
+        Relay_Control(Relay_IN,Relay_OFF);	//断开输入检测端
+        Relay_Control(Relay_OUT,Relay_ON);	//连接输出检测端
         delay_ms(100);
         Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
         Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
@@ -496,7 +503,7 @@ void task_1_3(void)
     {
 #endif
 
-        Relay_Control(3,0);	//连接负载
+        Relay_Control(Relay_LOAD,Relay_ON);	//连接负载
         delay_ms(100);
         Vol_Out_Load=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压 带4k负载
         Vol_Out_Load=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压 带4k负载
@@ -516,7 +523,7 @@ void task_1_3(void)
     Rout=(Vol_Out / Vol_Out_Load - 1.0f )* 4000 ;   //输出电阻
 
 
-    GPIO_SetBits(GPIOG, GPIO_Pin_1 | GPIO_Pin_3| GPIO_Pin_5| GPIO_Pin_7);
+    Relay_AllOFF;
     delay_ms(10);
     LED1 = 1;
 
