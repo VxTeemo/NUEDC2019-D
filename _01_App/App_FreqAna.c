@@ -28,7 +28,9 @@ char Fault_Type_str[][20]=
     "C3开路  ",
     "C1翻倍  ",
     "C2翻倍  ",
-    "C3翻倍  "
+    "C3翻倍  ",
+    "1未知异常",
+    "2未知异常"
 };
 
 #define ADS1256_MUX_AIN0 (ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM)
@@ -37,20 +39,21 @@ char Fault_Type_str[][20]=
 #define ShowX1 10
 #define ShowX2 180
 #define ShowX3 360
+#define ShowX4 540
 
 //#define MEASURE_LENGTH	200 	//单片机显示测量点数
 //#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进)
 #define R_Real    6800.0f       //固定电阻大小
 #define ADS9851_V_IN   0.555f       //9851输出幅度 测输入电阻用的大电压
-#define ADS9851_V_IN2   0.11f       //9851输出幅度 现在没用到
-#define ADS9851_V_IN3   0.020f       //9851输出幅度 扫频时用的幅度
+#define ADS9851_V_IN2  0.0115       //9851输出幅度 实际输出10mv的电压
+#define ADS9851_V_IN3  0.020f       //9851输出幅度 扫频时用的幅度
 
 GRAPH_Struct 	GridData;		//网格结构体定义
 const int log_table_length = sizeof(log_table)/sizeof(float);//101
 float SignalData[log_table_length]= {0};   //采集的原始数据
 float AvData[log_table_length]= {0};			//转换成对数
 
-float VMax_Fre, Rin, Rout, All_Gain, Vol_IN_Std;
+float VMax_Fre, Rin, Rout, All_Gain, Vol_IN_Std, Vol_Out50k_Std;
 int last_fault = Fault_Type_Normal;
 u8 Fault_Change_Flag = 1;//上电检测一次
 u8 UpdateGragh = 0;
@@ -175,7 +178,7 @@ void AD9851_Sweep(void)
 {
     u32 i;
     int j;
-//    Fault_Type fault_Type;
+    Fault_Type fault_Type = Fault_Type_Normal;
     LED1 = 0;
     //测试延时1ms，101点，一轮循环耗时600ms
     for(i=0; i<101; i++)
@@ -200,20 +203,22 @@ void AD9851_Sweep(void)
 		//All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2 / 1.414);   //增益
 
         OS_Num_Show(ShowX3,390     ,16,1,SignalData[i],"***%0.3f   ");
-        OS_Num_Show(ShowX3,390+16  ,16,1,AvData[i],"###%0.3f   ");
+        OS_Num_Show(ShowX3,390+16  ,16,1,AvData[i]    ,"###%0.3f   ");
+        OS_Num_Show(ShowX3,390+16*2,16,1,i            ,"+++%0.0f%% ");
+        OS_Num_Show(ShowX3,390+16*4,16,1,Vol_IN_Std   ,"INStd%0.3f   ");
 
-//        if(i % 33)  //一个循环3次
-//        {
-//            fault_Type = Fault_Detect();
-//            if(last_fault != fault_Type)//和上次状态不一样，更新参数，更新故障类型显示
-//            {
-//                Fault_Change_Flag = 1;
-//                last_fault = fault_Type;
-//                OS_String_Show(10,390+16*3,16,1,Fault_Type_str[fault_Type]);
-//                return ;//剩下的频率暂时不扫描，优先测量显示参数
-//            }
-//            last_fault = fault_Type;
-//        }
+        if(i % 33 == 0)  //一个循环3次
+        {
+            fault_Type = Fault_Detect();
+            if(last_fault != fault_Type)//和上次状态不一样，更新参数，更新故障类型显示
+            {
+                //Fault_Change_Flag = 1;
+                last_fault = fault_Type;
+                OS_String_Show(ShowX3,390+16*3,16,1,Fault_Type_str[fault_Type]);
+                return ;//剩下的频率暂时不扫描，优先测量显示参数
+            }
+            last_fault = fault_Type;
+        }
 
 
 
@@ -245,7 +250,7 @@ __inline float ADS1256_Measure(float fre, float range, u32 delay)
     return Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));
 }
 
-float AD_ACNormal    = 1.13f;	//正常交流
+float AD_ACNormal    = 0.162f;	//正常输出交流
 float AD_AC50k_C1C2D = 1.004f;	//50k 100mv C1C2翻倍的情况
 float AD_AC50k_C3O   = 1.096f;	//50k 100mv C3开路的情况
 float AD_AC50k_C3D   = 0.0f;    	//50k 100mv C3翻倍的情况
@@ -271,6 +276,7 @@ float AD_DC_R1S     = 11.23f/4.0f;    	//R1短 RS应为0
 float AD_DC_R2S     = 11.97f/4.0f;    	//R2短 RS应为0
 float AD_DC_R4S     = 0.135f/4.0f;    	//R4短 RS应为0
 
+#define MeasureDelay 500
 
 Fault_Type Fault_Detect(void)
 {
@@ -291,29 +297,24 @@ Fault_Type Fault_Detect(void)
 //    VolAC =  ADS1256_Measure(1000, 0.1, 1);
 
 
+//    dds.range=ADS9851_V_IN2;//0.010mv校准值
+//    sendData(dds);        
+//	Relay_Control(Relay_IN,Relay_OFF);	//断开输入检测端
+//    Relay_Control(Relay_OUT,Relay_ON);	//连接输出检测端
 
+	
+	
+
+    /***输出1k 10MV信号 **/
+    dds.fre = 1000;
+    dds.range = ADS9851_V_IN2;
+    sendData(dds);
 
     //Relay_AllOFF;
     Relay_Control(Relay_ALL,Relay_OFF);
-    Relay_Control(Relay_IN,Relay_ON); //连接输入检测端
-
-    /***输出1k 100MV信号 **/
-    dds.fre = 1000;
-    dds.range = 0.01;
-    sendData(dds);
-    delay_ms(1000);
-//		dds.fre = 50000;
-//		dds.range = 0.01;
-//		sendData(dds);
-//		delay_ms(1000);
-//		Relay_Control(Relay_OUT,Relay_OFF);	//输出关闭
-//		Relay_Control(Relay_IN,Relay_ON);	//输入打开
-//		dds.fre = 15;
-//		dds.range = 1;
-//		sendData(dds);
-    //delay_ms(1000);
-
-
+    Relay_Control(Relay_OUT,Relay_ON); //连接输出检测端
+	
+    delay_ms(MeasureDelay);
     //测量输出交流电压
     VolAC =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//ADS1256_Measure(1000, 0.1, 1);
     VolAC =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//ADS1256_Measure(1000, 0.1, 1);
@@ -322,26 +323,31 @@ Fault_Type Fault_Detect(void)
     //测量输入交流电压
     Relay_Control(Relay_OUT,Relay_OFF);	//输出关闭
     Relay_Control(Relay_IN,Relay_ON);	//输入打开
-    delay_ms(1000);
+    delay_ms(MeasureDelay);
     VolIN =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//ADS1256_Measure(1000, 0.1, 1);
     VolIN =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//ADS1256_Measure(1000, 0.1, 1);
 
-    //delay_ms(1000);
+    //delay_ms(MeasureDelay);
 
 
-    if(RANGEIN(VolAC,AD_ACNormal,0.01f)) //交流正常
+	OS_Num_Show(ShowX4,390     ,16,1,VolAC,"VolAC:%0.3f   ");
+	OS_Num_Show(ShowX4,390+16  ,16,1,AD_ACNormal,"AD_ACNormal:%0.3f   ");
+	
+	
+    if(RANGEIN(VolAC,AD_ACNormal,0.05f)) //交流正常
     {
         Relay_Control(Relay_IN,Relay_OFF);	//输入关闭
         Relay_Control(Relay_OUT,Relay_ON);	//输出打开
-        delay_ms(1000);
-        Vol =  ADS1256_Measure(50000, 0.01, 1000);
+        delay_ms(MeasureDelay);
+        Vol =  ADS1256_Measure(50000, ADS9851_V_IN2, 500);
 
-        if(RANGEIN(Vol,AD_AC50k_C1C2D,0.01f)) //继续测量C1翻倍 C2翻倍
+		//AD_AC50k_C1C2D = Vol_Out50k_Std;
+        if(RANGEIN(Vol,Vol_Out50k_Std,0.01f)) //继续测量C1翻倍 C2翻倍
         {
 
             Relay_Control(Relay_OUT,Relay_OFF);	//输出关闭
             Relay_Control(Relay_IN,Relay_ON);	//输入打开
-            delay_ms(1000);
+            delay_ms(MeasureDelay);
             Vol =  ADS1256_Measure(15, 1, 1000);
 
             if(RANGEIN(Vol,AD_AC15_C1D,0.005f))//C1翻倍
@@ -362,7 +368,7 @@ Fault_Type Fault_Detect(void)
         {
 			Relay_Control(Relay_IN,Relay_OFF);	//输入关闭
 			Relay_Control(Relay_OUT,Relay_ON);	//输出打开
-            delay_ms(1000);
+            delay_ms(MeasureDelay);
             Vol =  ADS1256_Measure(50000, 0.01, 1000);
 
             if(RANGEIN(Vol,AD_AC50k_C3O,0.01f))//C3开路
@@ -381,7 +387,7 @@ Fault_Type Fault_Detect(void)
         /*关闭交流输出*/
         dds.output=0;
         sendData(dds);
-		delay_ms(1000);
+		delay_ms(MeasureDelay);
         VolDC =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN1));//检测直流
         VolDC =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN1));
 
@@ -389,7 +395,7 @@ Fault_Type Fault_Detect(void)
         {
             dds.output=1;
 			sendData(dds);
-			delay_ms(1000);
+			delay_ms(MeasureDelay);
             Vol = ADS1256_Measure(1000, 0.01,1000);
 
             if(RANGEIN(Vol,AD_IN_C1O,0.005f)) //是否检测C1开路
@@ -403,7 +409,7 @@ Fault_Type Fault_Detect(void)
 //
 //				Relay_Control(Relay_IN,Relay_OFF);	//输入关闭
 //				Relay_Control(Relay_OUT,Relay_ON);	//输出打开
-//				delay_ms(1000);
+//				delay_ms(MeasureDelay);
 				
 //				Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//检测输出交流
 //				Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));
@@ -431,7 +437,7 @@ Fault_Type Fault_Detect(void)
 //	
 //				Relay_Control(Relay_IN,Relay_OFF);	//输入关闭
 //				Relay_Control(Relay_OUT,Relay_ON);	//输出打开
-//				delay_ms(1000);
+//				delay_ms(MeasureDelay);
 				
 //				Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//检测输出交流
 //				Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));
@@ -459,7 +465,7 @@ Fault_Type Fault_Detect(void)
                 /*关闭交流输出 检测直流*/
                 dds.output=0;
                 sendData(dds);
-				delay_ms(1000);
+				delay_ms(MeasureDelay);
                 Vol =  Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1));//检测直流
                 Vol =  Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1));
 
@@ -469,7 +475,7 @@ Fault_Type Fault_Detect(void)
                 }
 				else
 				{
-					return Fault_Type_Error;
+					return Fault_Type_Error1;
 				}
 
             }
@@ -483,7 +489,7 @@ Fault_Type Fault_Detect(void)
 
                 Relay_Control(Relay_ALL,Relay_OFF);	//关闭全部
                 Relay_Control(Relay_IN,Relay_ON);	//打开输入
-                delay_ms(1000);
+                delay_ms(MeasureDelay);
 
                 Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//检测交流
                 Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));
@@ -538,7 +544,7 @@ Fault_Type Fault_Detect(void)
             }
 			else
 			{
-				return Fault_Type_Error;
+				return Fault_Type_Error2;
 			}
 
 
@@ -635,9 +641,10 @@ void task_1_3(void)
 
         Relay_Control(Relay_IN,Relay_ON);	//连接输入检测端
         delay_ms(500);
-        Vol_in=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //输入端电压
-        Vol_in=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //输入端电压
+        Vol_in=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //输入端电压
+        Vol_in=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //输入端电压
         Vol_in += 0.003f;
+		Vol_IN_Std = Vol_in;
         OS_Num_Show(180,390     ,16,1,Vol_in,"Vol_in:%0.3f   ");
 
 #if KEY_TEST == 1
@@ -647,7 +654,7 @@ void task_1_3(void)
 #endif
 
 
-    dds.range=0.0115;
+    dds.range=ADS9851_V_IN2;//0.010mv校准值
     sendData(dds);
 #if KEY_TEST == 1
     OS_String_Show(ShowX2-16,390     ,16,1,"  ");
@@ -659,10 +666,21 @@ void task_1_3(void)
         Relay_Control(Relay_IN,Relay_OFF);	//断开输入检测端
         Relay_Control(Relay_OUT,Relay_ON);	//连接输出检测端
         delay_ms(500);
-        Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
-        Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
+        Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //测量放大电路输出端电压
+        Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //测量放大电路输出端电压
         Vol_Out += 0.003f;
+		AD_ACNormal = Vol_Out;
         OS_Num_Show(180,390+16  ,16,1,Vol_Out,"Vol_Out:%0.3f   ");
+		
+		
+		
+		dds.fre = 50000;
+		sendData(dds);
+        delay_ms(500);
+        Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //测量放大电路输出端电压
+        Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //测量放大电路输出端电压
+        Vol_Out50k_Std += 0.003f;
+        OS_Num_Show(180,390+16*4,16,1,Vol_Out50k_Std,"Vol_Out50k_Std:%0.3f   ");
 
 #if KEY_TEST == 1
         if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
