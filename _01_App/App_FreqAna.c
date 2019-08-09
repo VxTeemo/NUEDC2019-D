@@ -63,6 +63,8 @@ float AD_DC_R4S      = 0.135f/4.0f;    	//R4短 RS应为0
 //#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进)
 #define R_Real    6800.0f       //固定电阻大小
 #define ADS9851_V_IN   0.555f       //9851输出幅度
+#define ADS9851_V_IN2   0.11f       //9851输出幅度
+#define ADS9851_V_IN3   0.020f       //9851输出幅度
 
 GRAPH_Struct 	GridData;		//网格结构体定义
 const int log_table_length = sizeof(log_table)/sizeof(float);//101
@@ -95,11 +97,11 @@ void FreqAna_main()
 
 //        if(Fault_Change_Flag)
 //        {
-        task_1_3();
-        OS_Num_Show(ShowX1,390     ,16,1,Rin , "输入电阻:%0.1f   ");
-        OS_Num_Show(ShowX1,390+16  ,16,1,Rout, "输出电阻:%0.1f   ");
-        OS_Num_Show(ShowX1,390+16*2,16,1,All_Gain,"增益:%0.1f    ");
-        OS_Num_Show(ShowX1,390+16*3,16,1,1,"上限频率:%0.0fMhz  ");
+//        task_1_3();
+//        OS_Num_Show(ShowX1,390     ,16,1,Rin , "输入电阻:%0.1f   ");
+//        OS_Num_Show(ShowX1,390+16  ,16,1,Rout, "输出电阻:%0.1f   ");
+//        OS_Num_Show(ShowX1,390+16*2,16,1,All_Gain,"增益:%0.1f    ");
+//        OS_Num_Show(ShowX1,390+16*3,16,1,1,"上限频率:%0.0fMhz  ");
 		
 		
 //            Fault_Change_Flag = 0;
@@ -175,8 +177,8 @@ void GridData_Init(void)
     GridData.xmin=100;
 
     /*	左边纵轴的数字范围		*/
-    GridData.left_ymax=44;
-    GridData.left_ymin=0;
+    GridData.left_ymax=50;
+    GridData.left_ymin=-5;
 }
 
 
@@ -197,16 +199,38 @@ void AD9851_Sweep(void)
 		Relay_AllOFF;
 		Relay_Control(Relay_OUT,Relay_ON);	//连接输出检测端
         dds.fre= log_table[i];
-        dds.range = ADS9851_V_IN;
+        dds.range = ADS9851_V_IN3;
+//		if(i<30)
+//		{
+//			dds.range = ADS9851_V_IN2;
+//		}
+//		else
+//		{
+//			dds.range = ADS9851_V_IN3;
+//		}
+		
         sendData(dds);
 		if(i<20)
 			delay_ms(100);
 		else
-			delay_ms(20);
+			delay_ms(40);
 		
-        SignalData[i] = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM));
-        SignalData[i] = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1 | ADS1256_MUXN_AINCOM));
-        AvData[i] = 20 * log10(SignalData[i] / (ADS9851_V_IN / 5));
+        SignalData[i] = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM));
+        SignalData[i] = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM));
+		
+//		if(i<30)
+//		{
+//			AvData[i] = 20 * log10(SignalData[i] / (ADS9851_V_IN2-0.01 / 5));
+//		}
+//		else
+//		{
+//			AvData[i] = 20 * log10(SignalData[i] / (ADS9851_V_IN3 / 5));
+//		}
+		
+        AvData[i] = 20 * log10(SignalData[i] / ((ADS9851_V_IN3-0.01)/2.828)) - 6;//匹配衰减6db
+		
+//	All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2 / 1.414);   //增益
+		
 		OS_Num_Show(ShowX3,390     ,16,1,SignalData[i],"***%0.3f   ");
 		OS_Num_Show(ShowX3,390+16  ,16,1,AvData[i],"###%0.3f   ");
 
@@ -540,7 +564,7 @@ void task_1_3(void)
 //    vol_temp = Rin/(R_Real+Rin) * 0.01f / 2.0f / 1.414f;
 //    All_Gain = Vol_Out/vol_temp;     //增益
 	//Rin = 3500;
-	All_Gain=Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2 / 1.414);   //增益
+	All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2 / 1.414);   //增益
 
     Relay_AllOFF;
     delay_ms(10);
