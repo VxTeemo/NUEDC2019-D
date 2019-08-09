@@ -111,8 +111,6 @@ void FreqAna_main()
 //
 //        }
 
-
-
 //        AD9851_Sweep();
 
         if(UpdateGragh)
@@ -199,7 +197,7 @@ void AD9851_Sweep(void)
 
         AvData[i] = 20 * log10f(SignalData[i] / ((ADS9851_V_IN3-0.01f)/2.828f)) - 6.0f;//匹配衰减6db
 
-//	All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2 / 1.414);   //增益
+		//All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2 / 1.414);   //增益
 
         OS_Num_Show(ShowX3,390     ,16,1,SignalData[i],"***%0.3f   ");
         OS_Num_Show(ShowX3,390+16  ,16,1,AvData[i],"###%0.3f   ");
@@ -215,8 +213,9 @@ void AD9851_Sweep(void)
 //                return ;//剩下的频率暂时不扫描，优先测量显示参数
 //            }
 //            last_fault = fault_Type;
-
 //        }
+
+
 
         if(i==100)
         {
@@ -246,41 +245,37 @@ __inline float ADS1256_Measure(float fre, float range, u32 delay)
     return Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));
 }
 
-float AD_ACNormal    = 0.162f;	//正常交流
-float AD_AC50k_C1C2D = 0.131f;	//50k 100mv C1C2翻倍的情况
-float AD_AC50k_C3O   = 0.146f;	//50k 100mv C3开路的情况
+float AD_ACNormal    = 1.13f;	//正常交流
+float AD_AC50k_C1C2D = 1.004f;	//50k 100mv C1C2翻倍的情况
+float AD_AC50k_C3O   = 1.096f;	//50k 100mv C3开路的情况
 float AD_AC50k_C3D   = 0.0f;    	//50k 100mv C3翻倍的情况
+
+//TODO: 不使用15Hz进行判断，待修改
 float AD_AC15_C1D    = 1.304f;			//15hz 1V C1翻倍的情况
 float AD_AC15_C2D    = 1.286f;			//15hz 1V C2翻倍的情况
 
-
 float AD_DC_C1C2O    = 7.6f/4.0f;  			//是否检测C1 C2开路情况
 
-float AD_DC_C1O      = 0.0f;    				//C1 开路情况
-float AD_IAC_C1O      = 0.03536f; 		   //检测C1 / C2 条件 输入交流
-float AD_OAC_C1O      = 0.03536f; 		   //检测C1 / C2 条件 输出交流
-float AD_IAC_C2O      = 0.053f;				// C2 开路的情况 输入交流
-float AD_OAC_C2O      = 0.053f;				// C2 开路的情况 输出交流
+float AD_IN_C1O      = 0.03536f; 		//检测C1输入交流条件 
+float AD_AC_C1O      = 0.0f; 		    //检测C1输出交流条件 
+//float AD_IN_C2O      = 0.053f;				// C2 开路的情况 输入交流
+float AD_AC_C2O      = 0.053f;		  // C2 开路的情况 输出交流
 
-float AD_DC_R3S      = 0.030f;    		//R3短
-float AD_AC_R1R4O    =  0.0f;         //R1 R4 断开条件
+float AD_DC_R3S      = 12.0f/4.0f;    //R3短
+float AD_AC_R4O    =  0.0f;           //R4 断开条件
 
-//float AD_AC_R        = 0.0f;          //检测
+float AD_DC_R2OU   = 11.0f/4.0f;    	//R2开 RS应为0
+float AD_DC_R2OD   = 1.0f/4.0f;    		//R2开 RS应为0
 
-float AD_DC_R_FULL   = 11.98f/4.0f;    	//电阻故障中直流最大的情况 包括R1开 R2短 R3短 R4开
-float AD_RS_R1O      = 0.084f;    		//R1开
-float AD_RS_R4O      = 0.074f;    		//R4开
-float AD_RS_R2S      = 0.000f;    		//R2短
+float AD_DC_R1S     = 11.23f/4.0f;    	//R1短 RS应为0
+float AD_DC_R2S     = 11.97f/4.0f;    	//R2短 RS应为0
+float AD_DC_R4S     = 0.135f/4.0f;    	//R4短 RS应为0
 
-float AD_DC_R1S   = 11.23f/4.0f;    	//R1短 RS应为0
-float AD_DC_R2O   = 4.19f/4.0f;    		//R2开 RS应为0
-float AD_DC_R3O   = 0.221f/4.0f;    	//R3开 RS应为5mv
-float AD_DC_R4S   = 0.135f/4.0f;    	//R4短 RS应为0
 
 Fault_Type Fault_Detect(void)
 {
     //当前一轮测量时间21ms 最大应该在80ms
-    float Vol,VolDC,VolAC,VolIN;
+    float Vol,Vol2,VolDC,VolAC,VolIN;
 
 //    dds.fre = 1000;
 //    dds.range = 0.1;
@@ -397,7 +392,7 @@ Fault_Type Fault_Detect(void)
 			delay_ms(1000);
             Vol = ADS1256_Measure(1000, 0.01,1000);
 
-            if(RANGEIN(Vol,AD_IAC_C1O,0.005f)) //是否检测C1开路
+            if(RANGEIN(Vol,AD_IN_C1O,0.005f)) //是否检测C1开路
             {
 
                 //这个分支只通向C1开路情况，正常来说此时输出交流为0，测量的代码已经注释了，如有需要取消注释
@@ -413,7 +408,7 @@ Fault_Type Fault_Detect(void)
 //				Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//检测输出交流
 //				Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));
 //
-//				if(RANGEIN(Vol,AD_OAC_C1O,0.005f))
+//				if(RANGEIN(Vol,AD_AC_C1O,0.005f))
 //				{
 				
                 return Fault_Type_C1Open;
@@ -425,7 +420,7 @@ Fault_Type Fault_Detect(void)
 //				}
 
             }
-            else if(RANGEIN(Vol,AD_IAC_C2O,0.005f))  //是否检测C2开路
+            else// if(RANGEIN(Vol,AD_IN_C2O,0.005f))  //是否检测C2开路
             {
 
                 //这个分支只通向C2开路情况，正常来说此时输出交流为53mv，测量的代码已经注释了，如有需要取消注释
@@ -441,7 +436,7 @@ Fault_Type Fault_Detect(void)
 //				Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//检测输出交流
 //				Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));
 //
-//				if(RANGEIN(Vol,AD_OAC_C2O,0.005f))
+//				if(RANGEIN(Vol,AD_AC_C2O,0.005f))
 //				{
 				
                 return Fault_Type_C2Open;
@@ -456,13 +451,12 @@ Fault_Type Fault_Detect(void)
         }
         else   //进行电阻判断
         {
-//			Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//检测交流
-//			Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));
-
+			
+			//VolIN是在之前测的
             if(RANGEIN(VolIN,Vol_IN_Std,0.005f))
             {
 
-                /*关闭交流输出*/
+                /*关闭交流输出 检测直流*/
                 dds.output=0;
                 sendData(dds);
 				delay_ms(1000);
@@ -473,10 +467,15 @@ Fault_Type Fault_Detect(void)
                 {
                     return Fault_Type_R3Short;
                 }
+				else
+				{
+					return Fault_Type_Error;
+				}
 
             }
-            else if(VolIN > (Vol_IN_Std + 0.005f) )
+            else if(VolIN > (Vol_IN_Std + 0.005f) )//输入交流大于标准值
             {
+				//输出1k大信号 测输入交流
                 dds.output=1;
                 dds.fre = 1000;
                 dds.range = 1.0;
@@ -489,21 +488,58 @@ Fault_Type Fault_Detect(void)
                 Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//检测交流
                 Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));
 
-                if(RANGEIN(Vol,AD_AC_R1R4O,0.005f))
-                {
-                    return Fault_Type_R1Open;
-                }
-                else
+                if(RANGEIN(Vol,AD_AC_R4O,0.005f)) //几乎为0，则为R4断开
                 {
                     return Fault_Type_R4Open;
                 }
+                else//不为0，检测值是否减小
+                {
+					
+					delay_ms(200);
+					Vol2 =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));//检测交流
+					Vol2 =  Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));
+					
+					if(Vol2 < Vol)//值在减小
+					{
+						return Fault_Type_R4Open;
+					}
+					else
+					{
+						return Fault_Type_R1Open;
+					}
+					
+					
+                }
 
             }
-            else//输出1k 小信号
+            else if((VolIN >= 0) && (VolIN < (Vol_IN_Std - 0.005f) ))//大于0小于标准值
             {
-                return Fault_Type_Error;
-
+				return Fault_Type_R3Open;
+			}
+			else if(RANGEIN(VolIN,0,0.005f))//输入交流基本为0
+			{
+				//测量输出直流 也是之前测量过
+				if(VolDC > AD_DC_R2OD && VolDC < AD_DC_R2OU)
+				{
+					return Fault_Type_R2Open;
+				}
+				else if(RANGEIN(VolDC,AD_DC_R1S,0.005f))
+				{
+					return Fault_Type_R1Short;
+				}
+				else if(RANGEIN(VolDC,AD_DC_R2S,0.005f))
+				{
+					return Fault_Type_R2Short;
+				}
+				else if(RANGEIN(VolDC,AD_DC_R4S,0.005f))
+				{
+					return Fault_Type_R4Short;
+				}
             }
+			else
+			{
+				return Fault_Type_Error;
+			}
 
 
         }//检测直流
