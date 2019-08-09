@@ -29,8 +29,7 @@ char Fault_Type_str[][20]=
     "C1翻倍  ",
     "C2翻倍  ",
     "C3翻倍  ",
-    "未知异常",
-    "直流不匹配"
+    "交流不匹配"
 };
 
 #define ADS1256_MUX_AIN0 (ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM)
@@ -257,8 +256,8 @@ __inline float ADS1256_Measure(float fre, float range, u32 delay)
 
 float AD_ACNormal    = 0.162f;	//正常输出交流
 float AD_AC50k_C1C2D = 1.004f;	//50k 10mv C1C2翻倍的情况
-float AD_AC50k_C3O   = 1.096f;	//50k 10mv C3开路的情况
-float AD_AC50k_C3D   = 0.0f;    	//50k 100mv C3翻倍的情况
+float AD_AC50k_C3O   = 0.153f;	//50k 10mv C3开路的情况
+float AD_AC50k_C3D   = 0.111f;    	//50k 100mv C3翻倍的情况
 
 //TODO: 不使用15Hz进行判断，待修改
 float AD_AC15_C1D    = 1.304f;			//15hz 1V C1翻倍的情况
@@ -330,7 +329,7 @@ Fault_Type Fault_Detect(void)
         Vol =  ADS1256_Measure(50000, ADS9851_V_IN2, 500);
 
 		//AD_AC50k_C1C2D = Vol_Out50k_Std;
-        if(RANGEIN(Vol,Vol_Out50k_Std,0.01f)) //继续测量C1翻倍 C2翻倍
+        if(RANGEIN(Vol,Vol_Out50k_Std,0.005f)) //继续测量C1翻倍 C2翻倍 正常
         {
 
             Relay_Control(Relay_OUT,Relay_OFF);	//输出关闭
@@ -359,17 +358,27 @@ Fault_Type Fault_Detect(void)
 			Relay_Control(Relay_OUT,Relay_ON);	//输出打开
             delay_ms(MeasureDelay);
             Vol =  ADS1256_Measure(50000, ADS9851_V_IN2, 1000);
+			OS_Num_Show(ShowX4,390+16*3,16,1,Vol,"AC50k:%0.3f   ");
 
 			
 			//AD_AC50k_C3O = Vol_Out50k_Std;
-            if(RANGEIN(Vol,Vol_Out50k_Std,0.02f))//C3开路
+            if(RANGEIN(Vol,AD_AC50k_C3O,0.008f))//C3开路
             {
                 return Fault_Type_C3Open;
             }
-            else
+            else if(RANGEIN(Vol,Vol_Out50k_Std,0.008f))
             {
-                return Fault_Type_C3Double;
+                return Fault_Type_Normal;
             }
+			else if(RANGEIN(Vol,AD_AC50k_C3D,0.008f))
+			{
+				return Fault_Type_C3Double;
+			}
+			else
+			{
+				return Fault_Type_Error1;
+			}
+			
         }
 
     }
@@ -662,7 +671,7 @@ void task_1_3(void)
 			Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //测量放大电路输出端电压
 			Vol_Out50k_Std += 0.003f;
 			OS_Num_Show(180,390+16*4,16,1,Vol_Out50k_Std,"Vol_Out50k_Std:%0.3f   ");
-			Vol_Out50k_Std = 0.140;
+			Vol_Out50k_Std = 0.139;
 //        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
 //            break;
 //		}
