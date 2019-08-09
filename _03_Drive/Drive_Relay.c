@@ -26,7 +26,12 @@ void Relay_Control(Relay_Select Relay_Num, Relay_State relay_state)
 		case 2:  PGout(3) = relay_state;  break;
 		case 3:  PGout(5) = relay_state;  break;
 		case 4:  PGout(7) = relay_state;  break;
-		
+		case 5:  
+			PGout(1) = relay_state; 
+			PGout(3) = relay_state;
+			PGout(5) = relay_state;
+			PGout(7) = relay_state;
+			break;
 		default: break;
 		
 	}

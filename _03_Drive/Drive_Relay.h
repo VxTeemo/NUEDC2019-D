@@ -12,7 +12,8 @@ typedef enum {
 	Relay_IN   = 1,
 	Relay_LOOP = 2,
 	Relay_LOAD = 3,
-	Relay_OUT  = 4
+	Relay_OUT  = 4,
+	Relay_ALL  = 5
 } Relay_Select;
 
 #ifndef Relay_AllOFF
