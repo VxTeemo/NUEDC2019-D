@@ -95,17 +95,16 @@ void FreqAna_main()
     while(1)
     {
 
-//        if(Fault_Change_Flag)
-//        {
-//        task_1_3();
-//        OS_Num_Show(ShowX1,390     ,16,1,Rin , "输入电阻:%0.1f   ");
-//        OS_Num_Show(ShowX1,390+16  ,16,1,Rout, "输出电阻:%0.1f   ");
-//        OS_Num_Show(ShowX1,390+16*2,16,1,All_Gain,"增益:%0.1f    ");
-//        OS_Num_Show(ShowX1,390+16*3,16,1,1,"上限频率:%0.0fMhz  ");
+        if(Fault_Change_Flag)
+        {
+			task_1_3();
+			OS_Num_Show(ShowX1,390     ,16,1,Rin , "输入电阻:%0.1f   ");
+			OS_Num_Show(ShowX1,390+16  ,16,1,Rout, "输出电阻:%0.1f   ");
+			OS_Num_Show(ShowX1,390+16*2,16,1,All_Gain,"增益:%0.1f    ");
+			OS_Num_Show(ShowX1,390+16*3,16,1,1,"上限频率:%0.0fMhz  ");	
 		
-		
-//            Fault_Change_Flag = 0;
-//        }
+            Fault_Change_Flag = 0;
+        }
 
 //			LED1 = 0;
 //			Fault_Detect();
@@ -191,6 +190,7 @@ void GridData_Init(void)
 void AD9851_Sweep(void)
 {
     u32 i;
+	int j;
 //    Fault_Type fault_Type;
     LED1 = 0;
     //测试延时1ms，101点，一轮循环耗时600ms
@@ -200,14 +200,6 @@ void AD9851_Sweep(void)
 		Relay_Control(Relay_OUT,Relay_ON);	//连接输出检测端
         dds.fre= log_table[i];
         dds.range = ADS9851_V_IN3;
-//		if(i<30)
-//		{
-//			dds.range = ADS9851_V_IN2;
-//		}
-//		else
-//		{
-//			dds.range = ADS9851_V_IN3;
-//		}
 		
         sendData(dds);
 		if(i<20)
@@ -218,16 +210,7 @@ void AD9851_Sweep(void)
         SignalData[i] = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM));
         SignalData[i] = Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0 | ADS1256_MUXN_AINCOM));
 		
-//		if(i<30)
-//		{
-//			AvData[i] = 20 * log10(SignalData[i] / (ADS9851_V_IN2-0.01 / 5));
-//		}
-//		else
-//		{
-//			AvData[i] = 20 * log10(SignalData[i] / (ADS9851_V_IN3 / 5));
-//		}
-		
-        AvData[i] = 20 * log10(SignalData[i] / ((ADS9851_V_IN3-0.01)/2.828)) - 6;//匹配衰减6db
+        AvData[i] = 20 * log10f(SignalData[i] / ((ADS9851_V_IN3-0.01f)/2.828f)) - 6.0f;//匹配衰减6db
 		
 //	All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2 / 1.414);   //增益
 		
@@ -249,7 +232,13 @@ void AD9851_Sweep(void)
 //        }
 
         if(i==100)
+		{
+			for(j=10;j>=0;j--)
+			{
+				 AvData[j] = (AvData[j] + AvData[j+1] + AvData[j+2] + AvData[j+3] + AvData[j+4] + AvData[j+5] + AvData[j+6]) / 7;
+			}
             UpdateGragh = 1;
+		}
 
     }
 
@@ -478,12 +467,11 @@ void Calib_Audion()
  * Parameters:  void
  * Description: 测试输入、输出电阻，增益
  */
-#define KEY_TEST 1 //按键测试
+#define KEY_TEST 0 //按键测试
 #define CircuitGain 4.0f//4.35f//4.51f
 void task_1_3(void)
 {
     float Vol_in,Vol_Out,Vol_Out_Load;
-    float vol_temp;
 
     LED1 = 0;
 
@@ -499,10 +487,10 @@ void task_1_3(void)
         sendData(dds);
 
         Relay_Control(Relay_IN,Relay_ON);	//连接输入检测端
-        delay_ms(100);
+        delay_ms(500);
         Vol_in=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //输入端电压
         Vol_in=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //输入端电压
-	Vol_in += 0.003;
+		Vol_in += 0.003f;
         OS_Num_Show(180,390     ,16,1,Vol_in,"Vol_in:%0.3f   ");
 
 #if KEY_TEST == 1
@@ -523,10 +511,10 @@ void task_1_3(void)
 
         Relay_Control(Relay_IN,Relay_OFF);	//断开输入检测端
         Relay_Control(Relay_OUT,Relay_ON);	//连接输出检测端
-        delay_ms(100);
+        delay_ms(500);
         Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
         Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压
-		Vol_Out += 0.003;
+		Vol_Out += 0.003f;
         OS_Num_Show(180,390+16  ,16,1,Vol_Out,"Vol_Out:%0.3f   ");
 
 #if KEY_TEST == 1
@@ -543,10 +531,10 @@ void task_1_3(void)
 #endif
 
         Relay_Control(Relay_LOAD,Relay_ON);	//连接负载
-        delay_ms(100);
+        delay_ms(500);
         Vol_Out_Load=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压 带4k负载
         Vol_Out_Load=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));  //测量放大电路输出端电压 带4k负载
-		Vol_Out_Load += 0.003;
+		Vol_Out_Load += 0.003f;
         OS_Num_Show(180,390+16*2,16,1,Vol_Out_Load,"Vol_Out_Load:%0.3f   ");
 
 #if KEY_TEST == 1
@@ -561,10 +549,8 @@ void task_1_3(void)
 
     Rout=(Vol_Out / Vol_Out_Load - 1.0f ) * 4000.0f;   //输出电阻
 
-//    vol_temp = Rin/(R_Real+Rin) * 0.01f / 2.0f / 1.414f;
-//    All_Gain = Vol_Out/vol_temp;     //增益
 	//Rin = 3500;
-	All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2 / 1.414);   //增益
+	All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2.0f / 1.414f);   //增益
 
     Relay_AllOFF;
     delay_ms(10);
