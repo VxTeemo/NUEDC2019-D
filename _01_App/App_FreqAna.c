@@ -256,8 +256,8 @@ __inline float ADS1256_Measure(float fre, float range, u32 delay)
 }
 
 float AD_ACNormal    = 0.162f;	//正常输出交流
-float AD_AC50k_C1C2D = 1.004f;	//50k 100mv C1C2翻倍的情况
-float AD_AC50k_C3O   = 1.096f;	//50k 100mv C3开路的情况
+float AD_AC50k_C1C2D = 1.004f;	//50k 10mv C1C2翻倍的情况
+float AD_AC50k_C3O   = 1.096f;	//50k 10mv C3开路的情况
 float AD_AC50k_C3D   = 0.0f;    	//50k 100mv C3翻倍的情况
 
 //TODO: 不使用15Hz进行判断，待修改
@@ -350,12 +350,14 @@ Fault_Type Fault_Detect(void)
         }
         else
         {
-			Relay_Control(Relay_IN,Relay_OFF);	//输入关闭
+			Relay_Control(Relay_ALL,Relay_OFF);	//输入关闭
 			Relay_Control(Relay_OUT,Relay_ON);	//输出打开
             delay_ms(MeasureDelay);
-            Vol =  ADS1256_Measure(50000, 0.01, 1000);
+            Vol =  ADS1256_Measure(50000, ADS9851_V_IN2, 1000);
 
-            if(RANGEIN(Vol,AD_AC50k_C3O,0.01f))//C3开路
+			
+			//AD_AC50k_C3O = Vol_Out50k_Std;
+            if(RANGEIN(Vol,Vol_Out50k_Std,0.02f))//C3开路
             {
                 return Fault_Type_C3Open;
             }
@@ -670,6 +672,7 @@ void task_1_3(void)
 			Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //测量放大电路输出端电压
 			Vol_Out50k_Std += 0.003f;
 			OS_Num_Show(180,390+16*4,16,1,Vol_Out50k_Std,"Vol_Out50k_Std:%0.3f   ");
+			Vol_Out50k_Std = 0.140;
 //        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
 //            break;
 //		}
