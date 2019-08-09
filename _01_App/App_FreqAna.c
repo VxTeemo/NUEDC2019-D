@@ -207,7 +207,7 @@ void AD9851_Sweep(void)
         OS_Num_Show(ShowX3,390+16*2,16,1,i            ,"+++%0.0f%% ");
         OS_Num_Show(ShowX3,390+16*4,16,1,Vol_IN_Std   ,"INStd%0.3f   ");
 
-        if(i % 33 == 0)  //一个循环3次
+        if(i % 50 == 0)  //一个循环3次
         {
             fault_Type = Fault_Detect();
             if(last_fault != fault_Type)//和上次状态不一样，更新参数，更新故障类型显示
@@ -222,7 +222,7 @@ void AD9851_Sweep(void)
 				OS_String_Show(ShowX3,390+16*3,16,1,Fault_Type_str[fault_Type]);
 			}
             last_fault = fault_Type;
-			delay_ms(100);
+			delay_ms(500);
         }
 
 
@@ -266,7 +266,7 @@ float AD_AC15_C2D    = 1.286f;			//15hz 1V C2翻倍的情况
 
 float AD_DC_C1C2O    = 7.6f/4.0f;  			//是否检测C1 C2开路情况
 
-float AD_IN_C1O      = 0.03536f; 		//检测C1输入交流条件 
+float AD_IN_C1O      = 0.003935f; 		//检测C1输入交流条件 
 float AD_AC_C1O      = 0.0f; 		    //检测C1输出交流条件 
 //float AD_IN_C2O      = 0.053f;				// C2 开路的情况 输入交流
 float AD_AC_C2O      = 0.053f;		  // C2 开路的情况 输出交流
@@ -383,7 +383,7 @@ Fault_Type Fault_Detect(void)
 			delay_ms(MeasureDelay);
             Vol = ADS1256_Measure(1000, 0.01,1000);
 
-            if(RANGEIN(Vol,AD_IN_C1O,0.005f)) //是否检测C1开路
+            if(RANGEIN(Vol,AD_IN_C1O,0.001f)) //是否检测C1开路
             {
 
                 //这个分支只通向C1开路情况，正常来说此时输出交流为0，测量的代码已经注释了，如有需要取消注释
@@ -660,16 +660,19 @@ void task_1_3(void)
         OS_Num_Show(180,390+16  ,16,1,Vol_Out,"Vol_Out:%0.3f   ");
 		
 		
-		
-		dds.fre = 50000;
-		dds.range=ADS9851_V_IN2;//0.010V校准值
-		sendData(dds);
-        delay_ms(500);
-        Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //测量放大电路输出端电压
-        Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //测量放大电路输出端电压
-        Vol_Out50k_Std += 0.003f;
-        OS_Num_Show(180,390+16*4,16,1,Vol_Out50k_Std,"Vol_Out50k_Std:%0.3f   ");
-
+//		while(1)
+//		{
+			dds.fre = 50000;
+			dds.range=ADS9851_V_IN2;//0.010V校准值
+			sendData(dds);
+			delay_ms(500);
+			Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //测量放大电路输出端电压
+			Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_AIN0));  //测量放大电路输出端电压
+			Vol_Out50k_Std += 0.003f;
+			OS_Num_Show(180,390+16*4,16,1,Vol_Out50k_Std,"Vol_Out50k_Std:%0.3f   ");
+//        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
+//            break;
+//		}
 
 
 
