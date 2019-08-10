@@ -671,11 +671,11 @@ void task_1_3(void)
 		
 		
 		
-	Relay_Control(Relay_7K,Relay_ON);
+	//Relay_Control(Relay_7K,Relay_ON);
 		
 		//1k 小信号 测输出  测量不带负载输出
 		dds.fre = 1000;
-		dds.range = Out_V_real;//ADS9851_V_10MV;//0.010mv校准值
+		dds.range = ADS9851_V_10MV;//Out_V_real;//ADS9851_V_10MV;//0.010mv校准值
 		dds.output = 1;
 		sendData(dds);
 		delay_ms(MeasureDelay);
@@ -687,7 +687,10 @@ void task_1_3(void)
 		AD_ACNormal = Vol_Out;//0.164;
         OS_Num_Show(180,390+16  ,16,1,Vol_Out,"Vol_Out:%0.3f   ");
 		
-	Relay_Control(Relay_7K,Relay_OFF);//不接7k
+	//Relay_Control(Relay_7K,Relay_OFF);//不接7k
+	
+	
+	
 //		#if KEY_TEST == 1
 //		while(1)
 //		{
@@ -716,10 +719,10 @@ void task_1_3(void)
 //    while(1)
 //    {
 #endif
-	Relay_Control(Relay_7K,Relay_ON);
+	//Relay_Control(Relay_7K,Relay_ON);
 		//1k 小信号 连接负载 测量带负载输出
 		dds.fre = 1000;
-		dds.range = Out_V_real;//ADS9851_V_10MV;
+		dds.range = ADS9851_V_10MV;//Out_V_real;//ADS9851_V_10MV;
 		dds.output=1;
 		sendData(dds);
 		
@@ -729,7 +732,7 @@ void task_1_3(void)
 		Vol_Out_Load=GetAve(ADS1256_MUX_OUT);
 		
         OS_Num_Show(180,390+16*2,16,1,Vol_Out_Load,"Vol_Out_Load:%0.3f   ");
-	Relay_Control(Relay_7K,Relay_OFF);//不接7k
+	//Relay_Control(Relay_7K,Relay_OFF);//不接7k
 	
 		Relay_Control(Relay_LOAD,Relay_OFF);	//断开负载
 
@@ -773,9 +776,9 @@ void mission0(void)
 	OS_Num_Show(ShowX1,390+16  ,16,1,Rout, "输出电阻:%0.1f   ");
 	OS_Num_Show(ShowX1,390+16*2,16,1,All_Gain,"增益:%0.1f    ");
 	
-	AD9851_Sweep();
-	if(Interface_Num==0)
-		OS_Num_Show(ShowX1,390+16*3,16,1,UpFreq/1000.0f,"上截止频率:%0.3fkhz   ");
+//	AD9851_Sweep();
+//	if(Interface_Num==0)
+//		OS_Num_Show(ShowX1,390+16*3,16,1,UpFreq/1000.0f,"上截止频率:%0.3fkhz   ");
 }
 #define Gain1_1 1.1f
 float Get_Real_V(void)
