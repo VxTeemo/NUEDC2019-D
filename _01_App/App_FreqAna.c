@@ -753,8 +753,7 @@ void mission0(void)
 #define Gain1_1 1.1f
 float Get_Real_V(void)
 {
-	float V_RMS_x, V_RMS_y, V_RMS_z, Out_V;
-	float Gain;
+	float V_RMS_x, Out_V;
 	
 	dds.fre = 1000;
 	dds.range=ADS9851_V_10MV;
@@ -763,7 +762,7 @@ float Get_Real_V(void)
 	
 	delay_ms(MeasureDelay*2);
 
-	V_RMS_x = GetAve(ADS1256_MUX_OUT) / Gain1_1;
+	V_RMS_x = GetAve(ADS1256_MUX_OUT);// / Gain1_1;
 	
 	Out_V = ADS9851_V_10MV * (ADS9851_V_10MV*4 / V_RMS_x);
 	Out_V_real = Out_V;
