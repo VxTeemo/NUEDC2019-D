@@ -20,7 +20,8 @@ typedef enum{
 	Fault_Type_C1Double,
 	Fault_Type_C2Double,
 	Fault_Type_C3Double,
-	Fault_Type_Error1
+	Fault_Type_Error1,
+	Fault_Type_Error2
 } Fault_Type;
 
 
