@@ -683,6 +683,11 @@ void task_1_3(void)
 //        Vol_Out=Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));  //测量放大电路输出端电压
 		
 		Vol_Out = GetAve(ADS1256_MUX_OUT);
+		Vol_Out += GetAve(ADS1256_MUX_OUT);
+		Vol_Out += GetAve(ADS1256_MUX_OUT);
+		Vol_Out += GetAve(ADS1256_MUX_OUT);
+		Vol_Out += GetAve(ADS1256_MUX_OUT);
+		Vol_Out /= 5;
 		
 		AD_ACNormal = Vol_Out;//0.164;
         OS_Num_Show(180,390+16  ,16,1,Vol_Out,"Vol_Out:%0.3f   ");
@@ -776,14 +781,15 @@ void mission0(void)
 	OS_Num_Show(ShowX1,390+16  ,16,1,Rout, "输出电阻:%0.1f   ");
 	OS_Num_Show(ShowX1,390+16*2,16,1,All_Gain,"增益:%0.1f    ");
 	
-//	AD9851_Sweep();
-//	if(Interface_Num==0)
-//		OS_Num_Show(ShowX1,390+16*3,16,1,UpFreq/1000.0f,"上截止频率:%0.3fkhz   ");
+	AD9851_Sweep();
+	if(Interface_Num==0)
+		OS_Num_Show(ShowX1,390+16*3,16,1,UpFreq/1000.0f,"上截止频率:%0.3fkhz   ");
 }
 #define Gain1_1 1.1f
 float Get_Real_V(void)
 {
 	float V_RMS_x, Out_V;
+	float V_Vpp_x;
 	
 	Relay_Control(Relay_7K,Relay_OFF);//不接7k
 	dds.fre = 1000;
@@ -793,34 +799,21 @@ float Get_Real_V(void)
 	
 	delay_ms(MeasureDelay*2);
 
-	V_RMS_x = GetAve(ADS1256_MUX_OUT);// / Gain1_1;
-	
-	if(V_RMS_x < 0.060f)
+	V_RMS_x = GetAve(ADS1256_MUX_OUT);
+	V_Vpp_x = V_RMS_x * 2.828f;
+	if(V_Vpp_x < 0.100f)
 	{
-		Out_V = ADS9851_V_10MV * (ADS9851_V_10MV*4 / V_RMS_x);
+		Out_V = ADS9851_V_10MV * (0.100f / V_Vpp_x);
 		Out_V_real = Out_V;
 	}
 	else
 	{
 		Out_V_real = ADS9851_V_10MV;
 	}
+		
 	
 	Relay_Control(Relay_7K,Relay_ON);//接上7k
 	
-//	dds.range=Out_V;
-//	sendData(dds);
-//	delay_ms(MeasureDelay*2);
-//	
-//	V_RMS_y = GetAve(ADS1256_MUX_OUT) / Gain1_1;
-
-//	V_RMS_z = GetAve(ADS1256_MUX_IN);
-//	
-//	
-//	OS_Num_Show(ShowX4,ShowY1,16,1,V_RMS_x , "V_RMS_x:%0.3f   ");
-//	OS_Num_Show(ShowX4,ShowY2,16,1,V_RMS_y , "V_RMS_y:%0.3f   ");
-//	OS_Num_Show(ShowX4,ShowY3,16,1,V_RMS_z , "V_RMS_z:%0.3f   ");
-//	
-//	Gain = V_RMS_y / V_RMS_z;
 	
 	return Out_V;
 }
