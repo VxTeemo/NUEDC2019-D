@@ -58,6 +58,7 @@ char Fault_Type_str[][20]=
 #define R_Real    6800.f//6788.0f       //固定电阻大小
 #define R_OUT    3895.0f//7892.0f//3895.0f
 #define ADS9851_V_BIG        0.210f//0.571f       //9851输出幅度 测输入电阻用的大电压
+#define ADS9851_V_BIG2       0.571f       //9851输出幅度 测输入电阻用的大电压
 #define ADS9851_V_BIG_REAL   0.500f       //9851输出幅度 测输入电阻用的大电压
 #define ADS9851_V_10MV  0.0115f       //9851输出幅度 实际输出10mv的电压
 #define ADS9851_V_SWEEP  0.020f       //9851输出幅度 扫频时用的幅度
@@ -228,7 +229,6 @@ void AD9851_Sweep(void)
         OS_Num_Show(ShowX3,390     ,16,1,SignalData[i],"***%0.3f   ");
         OS_Num_Show(ShowX3,390+16  ,16,1,AvData[i]    ,"###%0.3f   ");
         OS_Num_Show(ShowX3,390+16*2,16,1,i/2.0f       ,"+++%0.1f%% ");
-        //OS_Num_Show(ShowX3,390+16*4,16,1,Vol_IN_Std   ,"INStd%0.3f   ");
 		if(Key_Now_Get(KEY1,KEY_MODE_SHORT))
 		{
 			Interface_Num = 1;
@@ -301,7 +301,7 @@ float AD_DC_R4S     = 0.006;//0.016f/4.0f;    	//R4短 RS应为0
 float AD_IN_R4O     = 0.795f;//1.213f;//0.025;
 float AD_IN_R1O     = 0.787f;//1.365f;//0.028;//1.347f;
 
-#define MeasureDelay 300
+#define MeasureDelay 200
 
 Fault_Type Fault_Detect(void)
 {
@@ -314,6 +314,7 @@ Fault_Type Fault_Detect(void)
     dds.range = ADS9851_V_10MV;
     sendData(dds);
 	
+    delay_ms(MeasureDelay);
     delay_ms(MeasureDelay);
     //测量输出交流电压
     VolAC =  Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));
@@ -339,7 +340,7 @@ Fault_Type Fault_Detect(void)
 		delay_ms(MeasureDelay*4);
 		Vol_Out50k =  Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));
 		Vol_Out50k =  Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));
-		OS_Num_Show(ShowX4,390+16*4,16,1,Vol_Out50k,"Vol_Out50k:%0.3f   ");
+//		OS_Num_Show(ShowX4,390+16*4,16,1,Vol_Out50k,"Vol_Out50k:%0.3f   ");
 		
 		
 		//AD_AC50k_C1C2D = Vol_Out50k_Std;
@@ -353,7 +354,7 @@ Fault_Type Fault_Detect(void)
 			Vol = Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
 			Vol = Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
 			
-			OS_Num_Show(ShowX4,390+16*3,16,1,Vol,"Vol15hz:%0.3f   ");
+//			OS_Num_Show(ShowX4,390+16*3,16,1,Vol,"Vol15hz:%0.3f   ");
 			
             if(RANGEIN(Vol,AD_AC15_C1D,0.005f))//C1翻倍
             {
@@ -415,20 +416,27 @@ Fault_Type Fault_Detect(void)
         else   //进行电阻判断
         {
 				dds.fre = 1000;
-				dds.range = ADS9851_V_BIG;
+				dds.range = ADS9851_V_BIG2;
 				sendData(dds);
 				delay_ms(MeasureDelay*2);
 				VolIN_BIG =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
 				VolIN_BIG =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
 			
-				OS_Num_Show(ShowX4,390+16*4,16,1,Vol,"Vol1V:%0.3f   ");
+				OS_Num_Show(ShowX4,390+16*4,16,1,VolIN_BIG,"VolIN_BIG:%0.3f   ");
 			
 			
-			if(VolIN_BIG > Vol_IN_Std)//输入交流大于标准值
+			OS_Num_Show(ShowX3,390+16*4,16,1,Vol_IN_Std   ,"INStd%0.3f   ");
+			
+			if(RANGEIN(VolIN_BIG,Vol_IN_Std,0.015f))//输入交流大于标准值
+			{
+				return Fault_Type_R3Short;
+			}
+			else if(VolIN_BIG > Vol_IN_Std)//输入交流大于标准值
             {
 
-				
+				//return Fault_Type_R1Open;
 				//测量阻抗 阻抗值只与输入交流相关
+				
                 if(RANGEIN(VolIN_BIG,AD_IN_R4O,0.05f))
                 {
                     return Fault_Type_R4Open;
@@ -441,6 +449,7 @@ Fault_Type Fault_Detect(void)
 				{
 					return Fault_Type_Error2;
 				}
+				
 
             }
 			else//小于标准交流 // if(RANGEIN(VolIN,0,0.003f))//输入交流基本为0
@@ -561,7 +570,7 @@ float GetAve(u8 ADS1256_MUX_TYPE)
 
 void task_1_3(void)
 {
-    float Vol_in,Vol_in_7k,Vol_Out,Vol_Out_Load;
+    float Vol_in,Vol_in_7k,Vol_in_7k_big,Vol_Out,Vol_Out_Load;
 
     LED1 = 0;
 	//Relay_Control(Relay_631HSLS, Relay_ON);
@@ -601,9 +610,16 @@ void task_1_3(void)
 		
         OS_Num_Show(ShowX3,390     ,16,1,Vol_in_7k,"Vol_in_7K:%0.3f   ");
 		
+		
+
 		if(Save_Flag0 == 0)
 		{
-			Vol_IN_Std = Vol_in_7k;
+			dds.range=ADS9851_V_BIG2;		//大电压测输入
+			delay_ms(100);
+			sendData(dds);
+			Vol_in_7k_big = GetAve(ADS1256_MUX_IN);
+			
+			Vol_IN_Std = Vol_in_7k_big;
 			Save_Flag0 = 1;
 		}
 		
@@ -813,7 +829,7 @@ float Get_Gain(void)
 	Relay_Control(Relay_7K,Relay_OFF);//不接7k
 	
 	dds.fre=1000;
-	dds.range=ADS9851_V_10MV;
+	dds.range=Out_V_real;//ADS9851_V_10MV;
 	sendData(dds);	
 	
 	delay_ms(1000);
