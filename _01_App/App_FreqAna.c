@@ -34,10 +34,11 @@ char Fault_Type_str[][20]=
     "=========="
 };
 
-#define KEY_TEST  1 //按键测试
+#define KEY_TEST  0 //按键测试
 
 #define CircuitGain 12.98f// 4.0f
-#define INCircuitGain 11.24f//12.4552f//11.24f // 4.0f
+#define INCircuitGain  11.24f//12.4552f//11.24f // 4.0f
+#define OUTCircuitGain 1.1f//12.4552f//11.24f // 4.0f
 
 #define ADS1256_MUX_IN   (ADS1256_MUXP_AIN5 | ADS1256_MUXN_AINCOM)
 #define ADS1256_MUX_DC   (ADS1256_MUXP_AIN6 | ADS1256_MUXN_AINCOM)
@@ -56,7 +57,7 @@ char Fault_Type_str[][20]=
 //#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进)
 #define R_Real    6800.f//6788.0f       //固定电阻大小
 #define R_OUT    3895.0f//7892.0f//3895.0f
-#define ADS9851_V_BIG        0.210;//0.571f       //9851输出幅度 测输入电阻用的大电压
+#define ADS9851_V_BIG        0.210f//0.571f       //9851输出幅度 测输入电阻用的大电压
 #define ADS9851_V_BIG_REAL   0.500f       //9851输出幅度 测输入电阻用的大电压
 #define ADS9851_V_10MV  0.0115f       //9851输出幅度 实际输出10mv的电压
 #define ADS9851_V_SWEEP  0.020f       //9851输出幅度 扫频时用的幅度
@@ -68,7 +69,7 @@ float AvData[log_table_length]= {0};			//转换成对数
 float UpFreq;
 float Out_V_real;
 
-float VMax_Fre, Rin, Rout, All_Gain, Vol_IN_Std, Vol_Out50k_Std;
+float VMax_Fre, Rin, Rin_gain, Rout, All_Gain, Vol_IN_Std, Vol_Out50k_Std;
 int last_fault = Fault_Type_Normal;
 u8 Fault_Change_Flag = 1;//上电检测一次
 u8 UpdateGragh = 0;
@@ -78,6 +79,7 @@ void task_1_3(void);
 Fault_Type Fault_Detect(void);
 void mission0(void);
 float Get_Real_V(void);
+float Get_Gain(void);
 
 Fault_Type fault_Type;
 u8 Interface_Num = 0;
@@ -572,8 +574,7 @@ void task_1_3(void)
         dds.fre=1000;
         dds.range=ADS9851_V_BIG;		//大电压测输入
         sendData(dds);
-        //delay_ms(100);
-        delay_ms(1000);
+        delay_ms(100);
 		Vol_in = GetAve(ADS1256_MUX_IN);
 
         OS_Num_Show(180,390     ,16,1,Vol_in,"Vol_in:%0.3f   ");
@@ -593,8 +594,7 @@ void task_1_3(void)
 		
 		
 		Relay_Control(Relay_7K,Relay_ON);//接上7k
-        //delay_ms(100);
-        delay_ms(1000);
+        delay_ms(100);
 		Vol_in_7k = GetAve(ADS1256_MUX_IN);
 		
         OS_Num_Show(ShowX3,390     ,16,1,Vol_in_7k,"Vol_in_7K:%0.3f   ");
@@ -656,7 +656,7 @@ void task_1_3(void)
 		
 		//1k 小信号 测输出  测量不带负载输出
 		dds.fre = 1000;
-		dds.range = Out_V_real;//ADS9851_V_10MV;//0.010mv校准值
+		dds.range = ADS9851_V_10MV;//Out_V_real;//ADS9851_V_10MV;//0.010mv校准值
 		dds.output = 1;
 		sendData(dds);
 		delay_ms(MeasureDelay);
@@ -698,7 +698,7 @@ void task_1_3(void)
 #endif
 		//1k 小信号 连接负载 测量带负载输出
 		dds.fre = 1000;
-		dds.range = Out_V_real;//ADS9851_V_10MV;
+		dds.range = ADS9851_V_10MV;//Out_V_real;//ADS9851_V_10MV;
 		dds.output=1;
 		sendData(dds);
 		
@@ -721,12 +721,16 @@ void task_1_3(void)
     //Rin=(R_Real * Vol_in/INCircuitGain ) / (ADS9851_V_BIG/2.828f - Vol_in/INCircuitGain );  //输入电阻
 	
 	Rin=(R_Real * Vol_in_7k ) / (Vol_in - Vol_in_7k );  //输入电阻
-	
+	//Rin_gain=(R_Real * Vol_in/INCircuitGain ) / (ADS9851_V_BIG/2.828f - Vol_in/INCircuitGain );  //输入电阻
 
     Rout=(Vol_Out / Vol_Out_Load - 1.0f ) * R_OUT;   //输出电阻4500.0f;
 
-    //Rin = 3500;
-    All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2.0f / 1.414f);   //增益
+    //All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2.0f / 1.414f);   //原公式
+	
+    //All_Gain = Vol_Out / ( Rin_gain/(R_Real+Rin_gain) * 0.01f / 2.0f / 1.414f);   //欲修改公式
+	
+	Get_Gain();
+//    All_Gain = (Vol_Out/OUTCircuitGain) / ( Vol_in/INCircuitGain );   //增益
 	
 	//All_Gain = Get_Real_V();
 
@@ -785,7 +789,26 @@ float Get_Real_V(void)
 	return Out_V;
 }
 
+float Get_Gain(void)
+{
+	float Vol_in_Small,Vol_out_Small;
+	
+	Relay_Control(Relay_7K,Relay_OFF);//不接7k
+	
+	dds.fre=1000;
+	dds.range=ADS9851_V_10MV;
+	sendData(dds);	
+	
+	delay_ms(1000);
+	Vol_in_Small = GetAve(ADS1256_MUX_IN);
+	Vol_out_Small = GetAve(ADS1256_MUX_OUT);
+	
+	All_Gain = (Vol_out_Small/OUTCircuitGain) / ( Vol_in_Small/INCircuitGain ); 
 
+	Relay_Control(Relay_7K,Relay_ON);//接上7k
+
+	return All_Gain;
+}
 
 
 
