@@ -62,6 +62,7 @@ const int log_table_length = sizeof(log_table)/sizeof(float);//101
 float SignalData[log_table_length]= {0};   //采集的原始数据
 float AvData[log_table_length]= {0};			//转换成对数
 float UpFreq;
+float Out_V_real;
 
 float VMax_Fre, Rin, Rout, All_Gain, Vol_IN_Std, Vol_Out50k_Std;
 int last_fault = Fault_Type_Normal;
@@ -72,6 +73,8 @@ void DDSDataInit2(void);
 void task_1_3(void);
 Fault_Type Fault_Detect(void);
 void mission0(void);
+float Gain_Detect(void);
+
 Fault_Type fault_Type;
 u8 Interface_Num = 0;
 
@@ -565,11 +568,14 @@ void task_1_3(void)
         dds.fre=1000;
         dds.range=ADS9851_V_BIG;		//大电压测输入
         sendData(dds);
-        delay_ms(100);
+        //delay_ms(100);
+        delay_ms(1000);
 		Vol_in = GetAve(ADS1256_MUX_IN);
 
         OS_Num_Show(180,390     ,16,1,Vol_in,"Vol_in:%0.3f   ");
-	
+
+
+#if KEY_TEST == 1		
 	    if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
             break;
     }
@@ -578,8 +584,13 @@ void task_1_3(void)
     OS_String_Show(ShowX3-16,390     ,16,1,"->");
 	 while(1)
     {
+		
+#endif
+		
+		
 		Relay_Control(Relay_7K,Relay_ON);//接上7k
-        delay_ms(100);
+        //delay_ms(100);
+        delay_ms(1000);
 		Vol_in_7k = GetAve(ADS1256_MUX_IN);
 		
         OS_Num_Show(ShowX3,390     ,16,1,Vol_in_7k,"Vol_in_7K:%0.3f   ");
@@ -598,6 +609,7 @@ void task_1_3(void)
     }
 #endif
 
+	//Relay_Control(Relay_631HSLS, Relay_OFF);
 
 		if(Save_Flag1 == 0)
 		{
@@ -616,6 +628,16 @@ void task_1_3(void)
 
 		}
 		
+		
+		
+		/*****************************/
+		All_Gain = Gain_Detect();
+		
+		
+		/*****************************/
+		
+		
+		
 #if KEY_TEST == 1
     OS_String_Show(ShowX3-16,390     ,16,1,"  ");
     //OS_String_Show(ShowX2-16,390     ,16,1,"  ");
@@ -624,9 +646,13 @@ void task_1_3(void)
 //    {
 #endif
 
-		//1k 小信号 测输出
+		
+		
+		
+		
+		//1k 小信号 测输出  测量不带负载输出
 		dds.fre = 1000;
-		dds.range = ADS9851_V_10MV;//0.010mv校准值
+		dds.range = Out_V_real;//ADS9851_V_10MV;//0.010mv校准值
 		dds.output = 1;
 		sendData(dds);
 		delay_ms(MeasureDelay);
@@ -642,15 +668,15 @@ void task_1_3(void)
 //		while(1)
 //		{
 //		#endif
-			//50k 小信号 测输出 标准值
-			
-			
+
 //			
 //		#if KEY_TEST == 1	
 //        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
 //            break;
 //		}
 //#endif
+
+
 
 
 
@@ -666,23 +692,14 @@ void task_1_3(void)
 //    while(1)
 //    {
 #endif
-		//1k 小信号 连接负载
+		//1k 小信号 连接负载 测量带负载输出
 		dds.fre = 1000;
-		dds.range=ADS9851_V_10MV;
+		dds.range = Out_V_real;//ADS9851_V_10MV;
 		dds.output=1;
 		sendData(dds);
 		
         Relay_Control(Relay_LOAD,Relay_ON);	//连接负载
         delay_ms(MeasureDelay*2);
-		
-//		dds.output=1;
-//		sendData(dds);
-		
-        //delay_ms(MeasureDelay*6);
-        //delay_ms(MeasureDelay*6);
-		
-//        Vol_Out_Load=Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));  //测量放大电路输出端电压 带4k负载
-//        Vol_Out_Load=Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));  //测量放大电路输出端电压 带4k负载
 		
 		Vol_Out_Load=GetAve(ADS1256_MUX_OUT);
 		
@@ -702,10 +719,13 @@ void task_1_3(void)
 	Rin=(R_Real * Vol_in_7k ) / (Vol_in - Vol_in_7k );  //输入电阻
 	
 
-    Rout=(Vol_Out / Vol_Out_Load - 1.0f ) * R_OUT;   //输出电阻4500.0f;//
+    Rout=(Vol_Out / Vol_Out_Load - 1.0f ) * R_OUT;   //输出电阻4500.0f;
 
     //Rin = 3500;
-    All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2.0f / 1.414f);   //增益
+    //All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2.0f / 1.414f);   //增益
+	
+	//All_Gain = Gain_Detect();
+
 	
     delay_ms(10);
     LED1 = 1;
@@ -726,3 +746,38 @@ void mission0(void)
 //	if(Interface_Num==0)
 //		OS_Num_Show(ShowX1,390+16*3,16,1,UpFreq/1000.0f,"上截止频率:%0.3fkhz   ");
 }
+
+float Gain_Detect(void)
+{
+	float V_RMS_x, V_RMS_y, V_RMS_z, Out_V;
+	float Gain;
+	
+	dds.fre = 1000;
+	dds.range=ADS9851_V_10MV;
+	dds.output=1;
+	sendData(dds);
+	
+	delay_ms(MeasureDelay*2);
+
+	V_RMS_x = GetAve(ADS1256_MUX_OUT);
+	
+	Out_V = ADS9851_V_10MV * (ADS9851_V_10MV*4 / V_RMS_x);
+	Out_V_real = Out_V;
+	
+	dds.range=Out_V;
+	sendData(dds);
+	delay_ms(MeasureDelay*2);
+	
+	V_RMS_y = GetAve(ADS1256_MUX_OUT);
+
+	V_RMS_z = GetAve(ADS1256_MUX_IN);
+	
+	Gain = V_RMS_y / V_RMS_z;
+	
+	return Gain;
+}
+
+
+
+
+
