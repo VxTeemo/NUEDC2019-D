@@ -44,7 +44,7 @@ char Fault_Type_str[][20]=
 //#define MEASURE_LENGTH	200 	//单片机显示测量点数
 //#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进)
 #define R_Real    6788.0f       //固定电阻大小
-#define R_OUT    7892.0f//3895.0f
+#define R_OUT    3895.0f//7892.0f//3895.0f
 #define ADS9851_V_BIG        0.571f       //9851输出幅度 测输入电阻用的大电压
 #define ADS9851_V_BIG_REAL   0.500f       //9851输出幅度 测输入电阻用的大电压
 #define ADS9851_V_10MV  0.0115f       //9851输出幅度 实际输出10mv的电压
@@ -63,7 +63,7 @@ u8 UpdateGragh = 0;
 void DDSDataInit2(void);
 void task_1_3(void);
 Fault_Type Fault_Detect(void);
-
+Fault_Type fault_Type;
 void FreqAna_main()
 {
     GridData_Init();
@@ -78,21 +78,37 @@ void FreqAna_main()
     while(1)
     {
 
-//        if(Fault_Change_Flag)
-//        {
+        //if(Fault_Change_Flag)
+        {
             task_1_3();
             OS_Num_Show(ShowX1,390     ,16,1,Rin , "输入电阻:%0.1f   ");
             OS_Num_Show(ShowX1,390+16  ,16,1,Rout, "输出电阻:%0.1f   ");
             OS_Num_Show(ShowX1,390+16*2,16,1,All_Gain,"增益:%0.1f    ");
             OS_Num_Show(ShowX1,390+16*3,16,1,1,"上限频率:%0.0fMhz  ");
 
-//            Fault_Change_Flag = 0;
-//        }
+            Fault_Change_Flag = 0;
+        }
 
-//			LED1 = 0;
+			LED1 = 0;
+			fault_Type =  Fault_Detect();
+			LED1 = 1;
+
+		
 //			Fault_Detect();
-//			LED1 = 1;
-
+			OS_String_Show(ShowX3,390+16*3,16,1,Fault_Type_str[fault_Type]);
+		
+//            if(last_fault != fault_Type)//和上次状态不一样，更新参数，更新故障类型显示
+//            {
+//                //Fault_Change_Flag = 1;
+//                last_fault = fault_Type;
+//                OS_String_Show(ShowX3,390+16*3,16,1,Fault_Type_str[fault_Type]);
+//                return ;//剩下的频率暂时不扫描，优先测量显示参数
+//            }
+//			if(fault_Type == Fault_Type_Normal)
+//			{
+//				
+//			}
+			
 //        if(Key_Now_Get(KEY2,KEY_MODE_SHORT))
 //        {
             //AD9851_Sweep();
@@ -307,6 +323,17 @@ Fault_Type Fault_Detect(void)
 		Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));
 		Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));
 
+			dds.fre = 50000;
+			dds.range=ADS9851_V_10MV;//0.010V校准值
+			sendData(dds);
+			delay_ms(MeasureDelay*3);
+			Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));  //测量放大电路输出端电压
+			Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));  //测量放大电路输出端电压
+			//Vol_Out50k_Std += 0.003f;
+			OS_Num_Show(180,390+16*4,16,1,Vol_Out50k_Std,"Vol_Out50k_Std:%0.3f   ");
+		
+		
+		
 		//AD_AC50k_C1C2D = Vol_Out50k_Std;
         if(RANGEIN(Vol,Vol_Out50k_Std,0.005f)) //继续测量C1翻倍 C2翻倍 正常
         {
@@ -342,7 +369,7 @@ Fault_Type Fault_Detect(void)
 			delay_ms(MeasureDelay);
 			Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));
 			
-			//AD_AC50k_C3O = Vol_Out50k_Std;
+			AD_AC50k_C3O = Vol_Out50k_Std;
 			//上电测量
             if(RANGEIN(Vol,AD_AC50k_C3O,0.008f))//C3开路
             {
@@ -516,7 +543,9 @@ void Calib_Audion()
  */
 #define KEY_TEST  0 //按键测试
 #define CircuitGain 12.98f// 4.0f
-#define INCircuitGain 12.4552f//11.24f // 4.0f
+#define INCircuitGain 11.24f//12.4552f//11.24f // 4.0f
+
+u8 Save_Flag0=0,Save_Flag1=0;
 void task_1_3(void)
 {
     float Vol_in,Vol_Out,Vol_Out_Load;
@@ -554,7 +583,11 @@ void task_1_3(void)
         //Vol_in += 0.003f;
         OS_Num_Show(180,390     ,16,1,Vol_in,"Vol_in:%0.3f   ");
 		//Vol_IN_Std = Vol_in;
-		Vol_IN_Std = Vol_in;//0.132;
+		if(Save_Flag0 == 0)
+		{
+			Vol_IN_Std = Vol_in;//0.805;
+			Save_Flag0 = 1;
+		}
 		
 #if KEY_TEST == 1
         if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
@@ -585,16 +618,23 @@ void task_1_3(void)
 //		while(1)
 //		{
 //		#endif
-//			//50k 小信号 测输出 标准值
-//			dds.fre = 50000;
-//			dds.range=ADS9851_V_10MV;//0.010V校准值
-//			sendData(dds);
-//			delay_ms(MeasureDelay);
-//			Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));  //测量放大电路输出端电压
-//			Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));  //测量放大电路输出端电压
-//			//Vol_Out50k_Std += 0.003f;
-//			OS_Num_Show(180,390+16*4,16,1,Vol_Out50k_Std,"Vol_Out50k_Std:%0.3f   ");
-//			//Vol_Out50k_Std = 0.139;
+			//50k 小信号 测输出 标准值
+			
+		if(Save_Flag1 == 0)
+		{
+			Save_Flag0 = 1;
+			
+			dds.fre = 50000;
+			dds.range=ADS9851_V_10MV;//0.010V校准值
+			sendData(dds);
+			delay_ms(MeasureDelay*3);
+			Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));  //测量放大电路输出端电压
+			Vol_Out50k_Std=Get_Val(ADS1256ReadData(ADS1256_MUX_OUT));  //测量放大电路输出端电压
+			//Vol_Out50k_Std += 0.003f;
+			OS_Num_Show(180,390+16*4,16,1,Vol_Out50k_Std,"Vol_Out50k_Std:%0.3f   ");
+			//Vol_Out50k_Std = 0.139;
+		}
+			
 //			
 //		#if KEY_TEST == 1	
 //        if(Key_Now_Get(KEY3,KEY_MODE_SHORT))
@@ -644,9 +684,9 @@ void task_1_3(void)
 
 //	Relay_Control(Relay_631HSLS, Relay_OFF);
 
-    Rin=(R_Real * Vol_in/INCircuitGain ) / (ADS9851_V_BIG_REAL/2.828f - Vol_in/INCircuitGain );  //输入电阻
+    Rin=(R_Real * Vol_in/INCircuitGain ) / (ADS9851_V_BIG/2.828f - Vol_in/INCircuitGain );  //输入电阻
 
-    Rout=(Vol_Out / Vol_Out_Load - 1.0f ) * R_OUT;   //输出电阻
+    Rout=(Vol_Out / Vol_Out_Load - 1.0f ) * R_OUT;   //输出电阻4500.0f;//
 
     //Rin = 3500;
     All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2.0f / 1.414f);   //增益
