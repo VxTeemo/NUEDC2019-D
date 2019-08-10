@@ -288,12 +288,14 @@ float AD_DC_R4S     = 0.016f/4.0f;    	//R4短 RS应为0
 float AD_DC_R3O     = 0.2f/4.0f;    	//R3开 RS应为0
 float AD_DC_R3S     = 11.74f/4.0f;    //R3短
 
+float AD_IN_R4O     = 1.213f;//0.025;
+float AD_IN_R1O     = 1.365f;//0.028;//1.347f;
 #define MeasureDelay 300
 
 Fault_Type Fault_Detect(void)
 {
     //当前一轮测量时间21ms 最大应该在80ms
-    float Vol,VolDC,VolAC,VolIN,Vol_Out50k;
+    float Vol,VolDC,VolAC,VolIN,VolIN_BIG,Vol_Out50k;
 	
 
     /***输出1k 10MV信号 **/
@@ -310,6 +312,7 @@ Fault_Type Fault_Detect(void)
 	
     VolIN =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
     VolIN =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
+
 
 	OS_Num_Show(ShowX4,390     ,16,1,VolAC,"VolAC:%0.3f   ");
 	OS_Num_Show(ShowX4,390+16  ,16,1,VolIN,"VolIN:%0.3f   ");
@@ -388,7 +391,7 @@ Fault_Type Fault_Detect(void)
         if(RANGEIN(VolDC,AD_DC_C1C2O,0.5f))//直流值大 检测 C1 C2 开路 进行交流检测
         {
 			
-			if(RANGEIN(VolIN,(ADS9851_V_10MV /2.828 *INCircuitGain),0.02f))
+			if(RANGEIN(VolIN,(ADS9851_V_10MV /2.828f *INCircuitGain),0.02f))
 			{
 				return Fault_Type_C1Open;
             }
@@ -400,33 +403,44 @@ Fault_Type Fault_Detect(void)
         }
         else   //进行电阻判断
         {
+				dds.fre = 1000;
+				dds.range = ADS9851_V_BIG;
+				sendData(dds);
+				delay_ms(MeasureDelay*2);
+				VolIN_BIG =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
+				VolIN_BIG =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
 			
-			//VolIN是在之前测的
-            
-			if(VolIN > (Vol_IN_Std + 0.04f) )//输入交流大于标准值
+				OS_Num_Show(ShowX4,390+16*4,16,1,Vol,"Vol1V:%0.3f   ");
+			
+			
+			if(VolIN_BIG > Vol_IN_Std)//输入交流大于标准值
             {
 				//输出1k大信号 测输入交流
-                dds.output=1;
-                dds.fre = 1000;
-                dds.range = ADS9851_V_BIG;
-                sendData(dds);
+//                dds.output=1;
+//                dds.fre = 1000;
+//                dds.range = ADS9851_V_BIG;
+//                sendData(dds);
 
-                delay_ms(MeasureDelay);
+//                delay_ms(MeasureDelay);
 
-                Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));//检测交流
-                Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
+//                Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));//检测交流
+//                Vol =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
 
-				OS_Num_Show(ShowX4,390+16*4,16,1,Vol,"Vol1V:%0.3f   ");
+//				OS_Num_Show(ShowX4,390+16*4,16,1,Vol,"Vol1V:%0.3f   ");
 				
-				//计算阻抗
-                if(RANGEIN(Vol,AD_AC_R4O,0.005f)) //几乎为0，则为R4断开
+				//测量阻抗 阻抗值只与输入交流相关
+                if(RANGEIN(VolIN_BIG,AD_IN_R4O,0.05f))
                 {
                     return Fault_Type_R4Open;
                 }
-                else//不为0，检测值是否减小
+                else if(RANGEIN(VolIN_BIG,AD_IN_R1O,0.05f))
                 {
 					return Fault_Type_R1Open;
                 }
+				else
+				{
+					return Fault_Type_Error2;
+				}
 
             }
 			else//小于标准交流 // if(RANGEIN(VolIN,0,0.003f))//输入交流基本为0
@@ -461,7 +475,81 @@ Fault_Type Fault_Detect(void)
 					return Fault_Type_Error;
 				}
             }
+			
+			
+			
+//			if(VolIN > (Vol_IN_Std + 0.04f) )//输入交流大于标准值
+//            {
+				//测量阻抗 阻抗值只与输入交流相关
+//                if(RANGEIN(VolIN,AD_IN_R4O,0.001f))
+//                {
+//                    return Fault_Type_R4Open;
+//                }
+//                else if(RANGEIN(VolIN,AD_IN_R1O,0.001f))
+//                {
+//					return Fault_Type_R1Open;
+//                }
 
+////            }
+//			else//小于标准交流 // if(RANGEIN(VolIN,0,0.003f))//输入交流基本为0
+				
+			
+			/********************************
+			if(VolIN_BIG < (Vol_IN_Std - 0.04f))
+			{
+				//测量输出直流 也是之前测量过
+				if(VolDC > AD_DC_R2OD && VolDC < AD_DC_R2OU)
+				{
+					return Fault_Type_R2Open;
+				}
+				else if(RANGEIN(VolDC,AD_DC_R1S,0.03f))
+				{
+					return Fault_Type_R1Short;
+				}
+				else if(RANGEIN(VolDC,AD_DC_R2S,0.03f))
+				{
+					return Fault_Type_R2Short;
+				}
+				else if(RANGEIN(VolDC,AD_DC_R4S,0.03f))
+				{
+					return Fault_Type_R4Short;
+				}
+				else if(RANGEIN(VolDC,AD_DC_R3O,0.03f))
+				{
+					return Fault_Type_R3Open;
+				}
+				else if(RANGEIN(VolDC,AD_DC_R3S,0.03f))
+                {
+                    return Fault_Type_R3Short;
+                }
+				else
+				{
+					return Fault_Type_Error;
+				}
+            }
+			else
+			{
+				dds.fre = 1000;
+				dds.range = ADS9851_V_BIG;
+				sendData(dds);
+				delay_ms(MeasureDelay*2);
+				VolIN_BIG =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
+				VolIN_BIG =  Get_Val(ADS1256ReadData(ADS1256_MUX_IN));
+	
+				if(RANGEIN(VolIN_BIG,AD_IN_R4O,0.050f))
+                {
+                    return Fault_Type_R4Open;
+                }
+                else if(RANGEIN(VolIN_BIG,AD_IN_R1O,0.050f))
+                {
+					return Fault_Type_R1Open;
+                }
+				else
+				{
+					return Fault_Type_Error2;
+				}
+			}
+***************************/
 
         }//检测直流
 
