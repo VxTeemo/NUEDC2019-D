@@ -279,14 +279,13 @@ float AD_AC15_C2D    = 1.286f;			//15hz 1V C2翻倍的情况
 
 float AD_DC_C1C2O    = 7.6f/4.0f;  			//是否检测C1 C2开路情况
 
-float AD_IN_C1O      = 2.000f; 		//检测C1输入交流条件 
-float AD_AC_C1O      = 0.0f; 		    //检测C1输出交流条件 
+//float AD_IN_C1O      = 2.000f; 		//检测C1输入交流条件 
+//float AD_AC_C1O      = 0.0f; 		    //检测C1输出交流条件 
 
 float AD_IN_C2O      = 0.053f;				// C2 开路的情况 输入交流
 
-float AD_AC_C2O      = 0.053f;		  // C2 开路的情况 输出交流
-
-float AD_AC_R4O    =  0.0f;           //R4 断开条件
+//float AD_AC_C2O      = 0.053f;		  // C2 开路的情况 输出交流
+//float AD_AC_R4O    =  0.0f;           //R4 断开条件
 
 float AD_DC_R2OU   = 6.0f/4.0f;    	//R2开 RS应为0
 float AD_DC_R2OD   = 3.0f/4.0f;    		//R2开 RS应为0
@@ -653,10 +652,11 @@ void task_1_3(void)
 		
 		
 		
+	Relay_Control(Relay_7K,Relay_OFF);//不接7k
 		
 		//1k 小信号 测输出  测量不带负载输出
 		dds.fre = 1000;
-		dds.range = ADS9851_V_10MV;//Out_V_real;//ADS9851_V_10MV;//0.010mv校准值
+		dds.range = Out_V_real;//ADS9851_V_10MV;//0.010mv校准值
 		dds.output = 1;
 		sendData(dds);
 		delay_ms(MeasureDelay);
@@ -668,6 +668,7 @@ void task_1_3(void)
 		AD_ACNormal = Vol_Out;//0.164;
         OS_Num_Show(180,390+16  ,16,1,Vol_Out,"Vol_Out:%0.3f   ");
 		
+	Relay_Control(Relay_7K,Relay_ON);
 //		#if KEY_TEST == 1
 //		while(1)
 //		{
@@ -696,9 +697,10 @@ void task_1_3(void)
 //    while(1)
 //    {
 #endif
+	Relay_Control(Relay_7K,Relay_OFF);//不接7k
 		//1k 小信号 连接负载 测量带负载输出
 		dds.fre = 1000;
-		dds.range = ADS9851_V_10MV;//Out_V_real;//ADS9851_V_10MV;
+		dds.range = Out_V_real;//ADS9851_V_10MV;
 		dds.output=1;
 		sendData(dds);
 		
@@ -708,6 +710,7 @@ void task_1_3(void)
 		Vol_Out_Load=GetAve(ADS1256_MUX_OUT);
 		
         OS_Num_Show(180,390+16*2,16,1,Vol_Out_Load,"Vol_Out_Load:%0.3f   ");
+	Relay_Control(Relay_7K,Relay_ON);
 		Relay_Control(Relay_LOAD,Relay_OFF);	//断开负载
 
 #if KEY_TEST == 1
@@ -759,6 +762,7 @@ float Get_Real_V(void)
 {
 	float V_RMS_x, Out_V;
 	
+	Relay_Control(Relay_7K,Relay_OFF);//不接7k
 	dds.fre = 1000;
 	dds.range=ADS9851_V_10MV;
 	dds.output=1;
@@ -768,8 +772,17 @@ float Get_Real_V(void)
 
 	V_RMS_x = GetAve(ADS1256_MUX_OUT);// / Gain1_1;
 	
-	Out_V = ADS9851_V_10MV * (ADS9851_V_10MV*4 / V_RMS_x);
-	Out_V_real = Out_V;
+	if(V_RMS_x < 0.060f)
+	{
+		Out_V = ADS9851_V_10MV * (ADS9851_V_10MV*4 / V_RMS_x);
+		Out_V_real = Out_V;
+	}
+	else
+	{
+		Out_V_real = ADS9851_V_10MV;
+	}
+	
+	Relay_Control(Relay_7K,Relay_ON);//接上7k
 	
 //	dds.range=Out_V;
 //	sendData(dds);
