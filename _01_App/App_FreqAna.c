@@ -393,7 +393,7 @@ Fault_Type Fault_Detect(void)
 		delay_ms(MeasureDelay);
         VolDC =  Get_Val(ADS1256ReadData(ADS1256_MUX_DC));
         VolDC =  Get_Val(ADS1256ReadData(ADS1256_MUX_DC));
-		OS_Num_Show(ShowX4,390+16*4,16,1,VolDC,"VolDC:%0.3f   ");
+		OS_Num_Show(ShowX4,390-16,16,1,VolDC,"VolDC:%0.3f   ");
 
         if(RANGEIN(VolDC,AD_DC_C1C2O,0.5f))//直流值大 检测 C1 C2 开路 进行交流检测
         {
