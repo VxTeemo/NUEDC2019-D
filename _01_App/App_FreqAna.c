@@ -277,7 +277,7 @@ float AD_AC50k_C3D   = 0.123f;    	//50k 100mv C3翻倍的情况
 float AD_AC15_C1D    = 1.304f;			//15hz 1V C1翻倍的情况
 float AD_AC15_C2D    = 1.286f;			//15hz 1V C2翻倍的情况
 
-float AD_DC_C1C2O    = 7.6f/4.0f;  			//是否检测C1 C2开路情况
+float AD_DC_C1C2O    = 1.9f;//7.6f/4.0f;  			//是否检测C1 C2开路情况
 
 //float AD_IN_C1O      = 2.000f; 		//检测C1输入交流条件 
 //float AD_AC_C1O      = 0.0f; 		    //检测C1输出交流条件 
@@ -287,17 +287,20 @@ float AD_IN_C2O      = 0.053f;				// C2 开路的情况 输入交流
 //float AD_AC_C2O      = 0.053f;		  // C2 开路的情况 输出交流
 //float AD_AC_R4O    =  0.0f;           //R4 断开条件
 
+float AD_DC_R1S     = 2.75;//10.96f/4.0f;    	//R1短 RS应为0
+float AD_DC_R2S     = 2.908;//11.48f/4.0f;    	//R2短 RS应为0
+
 float AD_DC_R2OU   = 6.0f/4.0f;    	//R2开 RS应为0
 float AD_DC_R2OD   = 3.0f/4.0f;    		//R2开 RS应为0
 
-float AD_DC_R1S     = 10.96f/4.0f;    	//R1短 RS应为0
-float AD_DC_R2S     = 11.48f/4.0f;    	//R2短 RS应为0
-float AD_DC_R4S     = 0.016f/4.0f;    	//R4短 RS应为0
-float AD_DC_R3O     = 0.2f/4.0f;    	//R3开 RS应为0
-float AD_DC_R3S     = 11.74f/4.0f;    //R3短
+float AD_DC_R3S     = 2.944;//11.74f/4.0f;    //R3短
+float AD_DC_R3O     = 0.049;//0.2f/4.0f;    	//R3开 RS应为0
 
-float AD_IN_R4O     = 1.213f;//0.025;
-float AD_IN_R1O     = 1.365f;//0.028;//1.347f;
+float AD_DC_R4S     = 0.006;//0.016f/4.0f;    	//R4短 RS应为0
+
+float AD_IN_R4O     = 0.795f;//1.213f;//0.025;
+float AD_IN_R1O     = 0.787f;//1.365f;//0.028;//1.347f;
+
 #define MeasureDelay 300
 
 Fault_Type Fault_Detect(void)
@@ -652,7 +655,7 @@ void task_1_3(void)
 		
 		
 		
-	Relay_Control(Relay_7K,Relay_OFF);//不接7k
+	Relay_Control(Relay_7K,Relay_ON);
 		
 		//1k 小信号 测输出  测量不带负载输出
 		dds.fre = 1000;
@@ -668,7 +671,7 @@ void task_1_3(void)
 		AD_ACNormal = Vol_Out;//0.164;
         OS_Num_Show(180,390+16  ,16,1,Vol_Out,"Vol_Out:%0.3f   ");
 		
-	Relay_Control(Relay_7K,Relay_ON);
+	Relay_Control(Relay_7K,Relay_OFF);//不接7k
 //		#if KEY_TEST == 1
 //		while(1)
 //		{
@@ -697,7 +700,7 @@ void task_1_3(void)
 //    while(1)
 //    {
 #endif
-	Relay_Control(Relay_7K,Relay_OFF);//不接7k
+	Relay_Control(Relay_7K,Relay_ON);
 		//1k 小信号 连接负载 测量带负载输出
 		dds.fre = 1000;
 		dds.range = Out_V_real;//ADS9851_V_10MV;
@@ -710,7 +713,8 @@ void task_1_3(void)
 		Vol_Out_Load=GetAve(ADS1256_MUX_OUT);
 		
         OS_Num_Show(180,390+16*2,16,1,Vol_Out_Load,"Vol_Out_Load:%0.3f   ");
-	Relay_Control(Relay_7K,Relay_ON);
+	Relay_Control(Relay_7K,Relay_OFF);//不接7k
+	
 		Relay_Control(Relay_LOAD,Relay_OFF);	//断开负载
 
 #if KEY_TEST == 1
@@ -753,9 +757,9 @@ void mission0(void)
 	OS_Num_Show(ShowX1,390+16  ,16,1,Rout, "输出电阻:%0.1f   ");
 	OS_Num_Show(ShowX1,390+16*2,16,1,All_Gain,"增益:%0.1f    ");
 	
-//	AD9851_Sweep();
-//	if(Interface_Num==0)
-//		OS_Num_Show(ShowX1,390+16*3,16,1,UpFreq/1000.0f,"上截止频率:%0.3fkhz   ");
+	AD9851_Sweep();
+	if(Interface_Num==0)
+		OS_Num_Show(ShowX1,390+16*3,16,1,UpFreq/1000.0f,"上截止频率:%0.3fkhz   ");
 }
 #define Gain1_1 1.1f
 float Get_Real_V(void)
