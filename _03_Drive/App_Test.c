@@ -16,14 +16,14 @@ void Test_main()
 		{
 			
 			  for(i=0;i<2;i++)
-						Test_Vol[0]=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN0|ADS1256_MUXN_AINCOM));
+						Test_Vol[0]=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN5|ADS1256_MUXN_AINCOM));
 			  delay_ms(100);
 			  for(i=0;i<2;i++)
-						Test_Vol[1]=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN1|ADS1256_MUXN_AINCOM));
+						Test_Vol[1]=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN6|ADS1256_MUXN_AINCOM));
 			  delay_ms(100);
-//			  for(i=0;i<2;i++)
-//						Test_Vol[2]=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN2|ADS1256_MUXN_AINCOM));
-//			  delay_ms(100);
+			  for(i=0;i<2;i++)
+						Test_Vol[2]=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN7|ADS1256_MUXN_AINCOM));
+			  delay_ms(100);
 //			  for(i=0;i<2;i++)
 //						Test_Vol[3]=Get_Val(ADS1256ReadData(ADS1256_MUXP_AIN3|ADS1256_MUXN_AINCOM));
 //			  delay_ms(100);

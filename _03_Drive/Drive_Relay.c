@@ -11,9 +11,11 @@ void Relay_Init(void)
 	GPIO_InitStructure.GPIO_Mode=GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType=GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_PuPd=GPIO_PuPd_NOPULL;
-	GPIO_InitStructure.GPIO_Pin=GPIO_Pin_1 | GPIO_Pin_3| GPIO_Pin_5| GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Pin=GPIO_Pin_1 | GPIO_Pin_3| GPIO_Pin_5| GPIO_Pin_7| GPIO_Pin_9;
 	
-	Relay_AllOFF;
+	Relay_Control(Relay_ALL,Relay_OFF);
+	Relay_Control(Relay_7K,Relay_ON);
+	
 	GPIO_Init(GPIOG,&GPIO_InitStructure);
 }
 
@@ -22,16 +24,19 @@ void Relay_Control(Relay_Select Relay_Num, Relay_State relay_state)
 	switch(Relay_Num)
 	{
 		
-		case 1:  PGout(1) = relay_state;  break;
-		case 2:  PGout(3) = relay_state;  break;
-		case 3:  PGout(5) = relay_state;  break;
-		case 4:  PGout(7) = relay_state;  break;
-		case 5:  
+		case Relay_631HSLS:PGout(1) = relay_state;  break;
+		case Relay_MESS_0: PGout(3) = relay_state;  break;
+		case Relay_9851:   PGout(5) = relay_state;  break;
+		case Relay_LOAD:   PGout(7) = relay_state;  break;
+		case Relay_7K:     PGout(9) = relay_state;  break;
+		case Relay_ALL:  
 			PGout(1) = relay_state; 
 			PGout(3) = relay_state;
 			PGout(5) = relay_state;
 			PGout(7) = relay_state;
-			break;
+			PGout(9) = relay_state;
+		break;
+		
 		default: break;
 		
 	}
