@@ -47,6 +47,10 @@ char Fault_Type_str[][20]=
 #define ShowX2 180
 #define ShowX3 360
 #define ShowX4 540
+#define ShowY1 (390)
+#define ShowY2 (390+16)
+#define ShowY3 (390+16*2)
+#define ShowY4 (390+16*3)
 
 //#define MEASURE_LENGTH	200 	//单片机显示测量点数
 //#define Get_Length      201    //总测量地点数 ((10^2-10^6)对数步进)
@@ -73,7 +77,7 @@ void DDSDataInit2(void);
 void task_1_3(void);
 Fault_Type Fault_Detect(void);
 void mission0(void);
-float Gain_Detect(void);
+float Get_Real_V(void);
 
 Fault_Type fault_Type;
 u8 Interface_Num = 0;
@@ -631,7 +635,7 @@ void task_1_3(void)
 		
 		
 		/*****************************/
-		All_Gain = Gain_Detect();
+		Get_Real_V();
 		
 		
 		/*****************************/
@@ -722,9 +726,9 @@ void task_1_3(void)
     Rout=(Vol_Out / Vol_Out_Load - 1.0f ) * R_OUT;   //输出电阻4500.0f;
 
     //Rin = 3500;
-    //All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2.0f / 1.414f);   //增益
+    All_Gain = Vol_Out / ( Rin/(R_Real+Rin) * 0.01f / 2.0f / 1.414f);   //增益
 	
-	//All_Gain = Gain_Detect();
+	//All_Gain = Get_Real_V();
 
 	
     delay_ms(10);
@@ -746,8 +750,8 @@ void mission0(void)
 //	if(Interface_Num==0)
 //		OS_Num_Show(ShowX1,390+16*3,16,1,UpFreq/1000.0f,"上截止频率:%0.3fkhz   ");
 }
-
-float Gain_Detect(void)
+#define Gain1_1 1.1f
+float Get_Real_V(void)
 {
 	float V_RMS_x, V_RMS_y, V_RMS_z, Out_V;
 	float Gain;
@@ -759,22 +763,27 @@ float Gain_Detect(void)
 	
 	delay_ms(MeasureDelay*2);
 
-	V_RMS_x = GetAve(ADS1256_MUX_OUT);
+	V_RMS_x = GetAve(ADS1256_MUX_OUT) / Gain1_1;
 	
 	Out_V = ADS9851_V_10MV * (ADS9851_V_10MV*4 / V_RMS_x);
 	Out_V_real = Out_V;
 	
-	dds.range=Out_V;
-	sendData(dds);
-	delay_ms(MeasureDelay*2);
-	
-	V_RMS_y = GetAve(ADS1256_MUX_OUT);
+//	dds.range=Out_V;
+//	sendData(dds);
+//	delay_ms(MeasureDelay*2);
+//	
+//	V_RMS_y = GetAve(ADS1256_MUX_OUT) / Gain1_1;
 
-	V_RMS_z = GetAve(ADS1256_MUX_IN);
+//	V_RMS_z = GetAve(ADS1256_MUX_IN);
+//	
+//	
+//	OS_Num_Show(ShowX4,ShowY1,16,1,V_RMS_x , "V_RMS_x:%0.3f   ");
+//	OS_Num_Show(ShowX4,ShowY2,16,1,V_RMS_y , "V_RMS_y:%0.3f   ");
+//	OS_Num_Show(ShowX4,ShowY3,16,1,V_RMS_z , "V_RMS_z:%0.3f   ");
+//	
+//	Gain = V_RMS_y / V_RMS_z;
 	
-	Gain = V_RMS_y / V_RMS_z;
-	
-	return Gain;
+	return Out_V;
 }
 
 
